@@ -7,7 +7,7 @@ const SnippexForm = () => {
 
     return (
         <div className="app-container">
-        {/* Sidebar - Ocupa toda a altura esquerda */}
+        
         <aside className="sidebar">
             <div className="sidebar-top">
             <div className="logo">
