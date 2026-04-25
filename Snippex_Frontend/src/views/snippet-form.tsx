@@ -1,143 +1,150 @@
 import { useState } from 'react';
-import '../css/form.css'
+import '../css/snippet-form.css'
 
 const SnippexForm = () => {
-    const [selectedType, setSelectedType] = useState('snippet');
-    const [visibility, setVisibility] = useState('public');
+  const [selectedType, setSelectedType] = useState('code');
+  const [isPublic, setIsPublic] = useState(true);
 
-    return (
-        <div className="app-container">
-        
-        <aside className="sidebar">
-            <div className="sidebar-top">
-            <div className="logo">
-                <div className="logo-icon"></div>
-                <span>snippex</span>
-            </div>
+  const [title, setTitle] = useState('');
+  const [language, setLanguage] = useState('JavaScript');
+  const [content, setContent] = useState('');
+  const [tags, setTags] = useState('');
+
+  function handleSubmit(e:any) {
+    e.preventDefault();
+
+    const snippet = {
+      user_id: 1, // usuário tem que ser o usuário logado, isso aqui é só de exemplo
+      title,
+      type: selectedType,
+      language,
+      content,
+      tags: tags.split(',').map(tag => tag.trim()),
+      isPublic
+    };
+
+    // TODO: integrar com backend
+    console.log("Snippet criado:", snippet);
+  }
+
+  return (
+    <div className="app-container">
+      <main className="main-content">
+        <section className="form-container">
+          <h2>Criar Snippet</h2>
+          <p className="subtitle">Salve um novo snippet de código ou prompt de IA</p>
+
+          <form onSubmit={handleSubmit}>
             
-            <nav className="nav-menu">
-                <div className="nav-item">🏠 Início</div>
-                <div className="nav-item">🧭 Explorar</div>
-                <div className="nav-item active">📄 Meus Snippets</div>
-                <div className="nav-item">🔖 Salvos</div>
-                <div className="nav-item">⚙️ Configurações</div>
-            </nav>
-            </div>
-
-            <div className="sidebar-bottom">
-            <div className="nav-item">☀️ Modo claro</div>
-            <div className="lang-switcher">
-                <span className="active">BR PT</span>
-                <span>US EN</span>
-                <span>ES ES</span>
-            </div>
-            <div className="user-profile">
-                <div className="avatar">AC</div>
-                <div className="user-info">
-                <span className="user-name">Alex Chen</span>
-                <span className="user-badge">PRO</span>
-                </div>
-                <div className="logout-emoji">🚪</div>
-            </div>
-            </div>
-        </aside>
-
-        {/* Main Content - Ocupa o resto da tela */}
-        <main className="main-content">
-            <header className="content-header">
-            <div className="search-bar">
-                <span>🔍 Buscar snippets...</span>
-                <kbd>⌘ K</kbd>
-            </div>
-            </header>
-
-            <section className="form-container">
-            <h2>Criar Snippet</h2>
-            <p className="subtitle">Salve um novo snippet de código ou prompt de IA</p>
-
             <div className="form-group">
-                <label>Título</label>
-                <input type="text" placeholder="ex: React Custom Hook: useDebounce" />
+              <label>Título</label>
+              <input 
+                type="text" 
+                placeholder="ex: React Custom Hook: useDebounce"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
             </div>
 
             <div className="form-row">
-                <div className="form-group">
+              <div className="form-group">
                 <label>TIPO</label>
                 <div className="toggle-group">
-                    <button 
-                    className={selectedType === 'snippet' ? 'active' : ''} 
-                    onClick={() => setSelectedType('snippet')}
-                    >
+                  <button 
+                    type="button"
+                    className={selectedType === 'code' ? 'active' : ''} 
+                    onClick={() => setSelectedType('code')}
+                  >
                     Snippet de Código
-                    </button>
-                    <button 
+                  </button>
+                  <button 
+                    type="button"
                     className={selectedType === 'prompt' ? 'active' : ''} 
                     onClick={() => setSelectedType('prompt')}
-                    >
+                  >
                     Prompt de IA
-                    </button>
+                  </button>
                 </div>
-                </div>
+              </div>
             </div>
 
             <div className="form-group">
-                <label>Linguagem</label>
-                <div className="select-wrapper">
-                <select>
-                    <option>JavaScript</option>
-                    <option>TypeScript</option>
-                    <option>Python</option>
+              <label>Linguagem</label>
+              <div className="select-wrapper">
+                <select 
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                >
+                  <option>JavaScript</option>
+                  <option>TypeScript</option>
+                  <option>Python</option>
                 </select>
                 <div className="select-arrow">▼</div>
-                </div>
+              </div>
             </div>
 
             <div className="form-group">
-                <label>Conteúdo</label>
-                <textarea placeholder="Cole seu código aqui..." rows={12}></textarea>
+              <label>Conteúdo</label>
+              <textarea 
+                placeholder="Cole seu código aqui..." 
+                rows={12}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+              />
             </div>
 
             <div className="form-group">
-                <label>Tags</label>
-                <input type="text" placeholder="Digite uma tag e pressione Enter" />
+              <label>Tags</label>
+              <input 
+                type="text" 
+                placeholder="ex: react, hooks, debounce"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+              />
             </div>
 
             <div className="form-group">
-                <label className="section-label">VISIBILIDADE</label>
-                <div className="visibility-options">
+              <label className="section-label">VISIBILIDADE</label>
+              <div className="visibility-options">
                 <div 
-                    className={`vis-card ${visibility === 'public' ? 'selected' : ''}`}
-                    onClick={() => setVisibility('public')}
+                  className={`vis-card ${isPublic === true ? 'selected' : ''}`}
+                  onClick={() => setIsPublic(true)}
                 >
-                    <strong>Público</strong>
-                    <span>Visível para a comunidade</span>
+                  <strong>Público</strong>
+                  <span>Visível para a comunidade</span>
                 </div>
                 <div 
-                    className={`vis-card ${visibility === 'private' ? 'selected' : ''}`}
-                    onClick={() => setVisibility('private')}
+                  className={`vis-card ${isPublic === false ? 'selected' : ''}`}
+                  onClick={() => setIsPublic(false)}
                 >
-                    <strong>Privado</strong>
-                    <span>Visível apenas para você</span>
+                  <strong>Privado</strong>
+                  <span>Visível apenas para você</span>
                 </div>
-                </div>
+              </div>
             </div>
 
             <div className="ai-box">
-                <span className="ai-emoji">✨</span>
-                <div className="ai-text">
+              <span className="ai-emoji">✨</span>
+              <div className="ai-text">
                 <strong>Explicação da IA</strong>
                 <p>A explicação da IA será gerada automaticamente após salvar</p>
-                </div>
+              </div>
             </div>
 
             <div className="form-actions">
-                <button className="btn-primary">Salvar Snippet</button>
-                <button className="btn-ghost">Cancelar</button>
+              <button className="btn-primary" type="submit">
+                Salvar Snippet
+              </button>
+              <button className="btn-ghost" type="button">
+                Cancelar
+              </button>
             </div>
-            </section>
-        </main>
-        </div>
-    );
+
+          </form>
+        </section>
+      </main>
+    </div>
+  );
 };
 
 export default SnippexForm;
