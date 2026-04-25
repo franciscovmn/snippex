@@ -1,0 +1,8 @@
+/* ─────────────────────────────────────────
+   App.css — estilos globais de aplicação
+───────────────────────────────────────── */
+
+/* Garante que o app ocupe toda a altura */
+.app-root {
+  height: 100%;
+}

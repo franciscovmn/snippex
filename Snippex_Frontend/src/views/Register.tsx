@@ -14,7 +14,7 @@ export default function Register() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // integrar com backend
+    // TODO: integrar com backend
     console.log({ fullName, username, email, password, confirm });
   }
 
@@ -28,7 +28,7 @@ export default function Register() {
       </header>
 
       <main className="page-layout">
-
+        {/* ── Coluna esquerda: hero ── */}
         <section className="hero" aria-labelledby="hero-heading">
           <h1 id="hero-heading" className="hero__headline">
             Seu código.<br />Explicado.<br />Compartilhado.
@@ -38,7 +38,7 @@ export default function Register() {
           </p>
         </section>
 
-        {/}
+        {/* ── Coluna direita: formulário de registro ── */}
         <section className="auth-panel" aria-labelledby="register-heading">
           <h2 id="register-heading" className="auth-panel__title">Criar sua conta</h2>
           <p className="auth-panel__subtitle">
@@ -46,7 +46,7 @@ export default function Register() {
           </p>
 
           <form onSubmit={handleSubmit} noValidate>
-            
+            {/* Nome completo + Usuário */}
             <div className="field-row">
               <div className="field-group">
                 <label className="field-group__label" htmlFor="reg-fullname">Nome completo</label>
@@ -79,7 +79,7 @@ export default function Register() {
               </div>
             </div>
 
-          
+            {/* E-mail */}
             <div className="field-group">
               <label className="field-group__label" htmlFor="reg-email">E-mail</label>
               <input
@@ -95,7 +95,7 @@ export default function Register() {
               />
             </div>
 
-       
+            {/* Senha + Confirmar */}
             <div className="field-row">
               <div className="field-group">
                 <label className="field-group__label" htmlFor="reg-password">Senha</label>

@@ -1,19 +1,16 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import './App.css'
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Login from "./views/Login";
+import Register from "./views/Register";
+import "./App.css";
 
-import SnippexForm from './views/snippet-form'
-
-function App() {
+export default function App() {
   return (
-    <>
-      <BrowserRouter>
-        <Routes>
-          <Route path='/' element={<><h1>Snippex</h1> <a href='/new'>novo snippet</a></>}></Route>
-          <Route path='/new' element={<SnippexForm />}></Route>
-        </Routes>
-      </BrowserRouter>
-    </>
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
-
-export default App
