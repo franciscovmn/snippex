@@ -3,6 +3,7 @@ import { SnippexLogo } from "../components/SnippexLogo";
 import { LangNav } from "../components/LangNav";
 import { BgCode } from "../components/BgCode";
 import { GithubIcon } from "../components/GithubIcon";
+import { Link } from "react-router-dom";
 import "../css/form.css";
 
 type DemoRole = "individual" | "equipe" | "empresarial";
@@ -120,6 +121,11 @@ export default function Login() {
             <GithubIcon />
             Continue com o GitHub
           </button>
+
+          <br /> <br /> 
+          
+          {/* galera, esse botão aqui serve só pra acessar o Dashboard enquanto ainda não tiver conexão com o banco, a fim de testes */}
+          <Link to="/dashboard" className="btn-github btn--full" type="button"> Entrar como convidado (Teste) </Link>
 
           <p className="auth-footer">
             Não tem conta?{" "}
