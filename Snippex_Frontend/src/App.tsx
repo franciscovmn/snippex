@@ -3,6 +3,7 @@ import Login from "./views/Login";
 import Register from "./views/Register";
 import SnippexForm from "./views/snippet-form";
 import Dashboard from "./views/Dashboard";
+
 import "./App.css";
 
 export default function App() {

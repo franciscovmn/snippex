@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import '../css/snippet-form.css'
 
 const SnippexForm = () => {
@@ -9,6 +9,16 @@ const SnippexForm = () => {
   const [language, setLanguage] = useState('JavaScript');
   const [content, setContent] = useState('');
   const [tags, setTags] = useState('');
+  const [loggedUserName, setLoggedUserName] = useState('');
+
+  useEffect(() => {
+  const userStorage = localStorage.getItem("user");
+
+  if (userStorage) {
+    const user = JSON.parse(userStorage);
+    setLoggedUserName(user.name);
+  }
+}, []);
 
   function handleSubmit(e:any) {
     e.preventDefault();

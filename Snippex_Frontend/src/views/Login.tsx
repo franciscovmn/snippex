@@ -4,6 +4,8 @@ import { LangNav } from "../components/LangNav";
 import { BgCode } from "../components/BgCode";
 import { GithubIcon } from "../components/GithubIcon";
 import { Link } from "react-router-dom";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import "../css/form.css";
 
 type DemoRole = "individual" | "equipe" | "empresarial";
@@ -13,12 +15,26 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
+  const navigate = useNavigate();
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    // TODO: integrar com backend
-    console.log({ role, email, password, remember });
+  async function handleSubmit(e: React.FormEvent) {
+  e.preventDefault();
+
+  try {
+    const response = await axios.post("http://localhost:3000/api/users/login", {
+      email,
+      password,
+    });
+
+    localStorage.setItem("token", response.data.token);
+    localStorage.setItem("user", JSON.stringify(response.data.user));
+
+    navigate("/new");
+  } catch (error) {
+    console.error(error);
+    alert("E-mail ou senha inválidos.");
   }
+}
 
   return (
     <>

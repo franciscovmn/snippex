@@ -3,6 +3,8 @@ import { SnippexLogo } from "../components/SnippexLogo";
 import { LangNav } from "../components/LangNav";
 import { BgCode } from "../components/BgCode";
 import { GithubIcon } from "../components/GithubIcon";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import "../css/form.css";
 
 export default function Register() {
@@ -11,12 +13,40 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const navigate = useNavigate();
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    // integrar com backend
-    console.log({ fullName, username, email, password, confirm });
+  async function handleSubmit(e: React.FormEvent) {
+  e.preventDefault();
+
+  if (password !== confirm) {
+    alert("As senhas não coincidem.");
+    return;
   }
+
+  try {
+    await axios.post("http://localhost:3000/api/users/register", {
+      name: fullName,
+      user_name: username,
+      email,
+      password,
+    });
+
+    alert("Conta criada com sucesso!");
+    navigate("/login");
+  } catch (error: any) {
+  console.error("Erro completo:", error);
+  console.error("Status:", error.response?.status);
+  console.error("Resposta do backend:", error.response?.data);
+  console.error("Mensagem:", error.message);
+
+
+    alert(
+    error.response?.data?.error ||
+    error.message ||
+    "Erro ao criar conta."
+  );
+}
+}
 
   return (
     <>
@@ -146,3 +176,4 @@ export default function Register() {
     </>
   );
 }
+
