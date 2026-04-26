@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import '../css/snippet-form.css'
 
+import type { Snippet } from '../types/snippet';
+
 const SnippexForm = () => {
   const [selectedType, setSelectedType] = useState('code');
   const [isPublic, setIsPublic] = useState(true);
@@ -23,14 +25,20 @@ const SnippexForm = () => {
   function handleSubmit(e:any) {
     e.preventDefault();
 
-    const snippet = {
-      user_id: 1, // usuário tem que ser o usuário logado, isso aqui é só de exemplo
-      title,
+    const snippet:Snippet = {
+      id: null,
+      user_id: 'AAAA-BBBB-CCCC-DDDD', // usuário tem que ser o usuário logado, isso aqui é só de exemplo
+      title: title,
       type: selectedType,
-      language,
-      content,
+      language: language,
+      code: content,
       tags: tags.split(',').map(tag => tag.trim()),
-      isPublic
+      is_public: isPublic,
+      explanation: null,
+      suggestions: null,
+      created_at: null,
+      updated_at: null,
+      deleted_at: null
     };
 
     // TODO: integrar com backend
