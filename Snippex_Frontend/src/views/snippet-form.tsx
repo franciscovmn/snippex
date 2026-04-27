@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import '../css/snippet-form.css'
 
 import type { Snippet } from '../types/snippet';
+import { snippetService } from '../services/snippetService';
 
 const SnippexForm = () => {
   const [selectedType, setSelectedType] = useState('code');
@@ -12,22 +13,24 @@ const SnippexForm = () => {
   const [content, setContent] = useState('');
   const [tags, setTags] = useState('');
   const [loggedUserName, setLoggedUserName] = useState('');
+  const [loggedUser, setLoggedUser] = useState<any>(null);
 
   useEffect(() => {
   const userStorage = localStorage.getItem("user");
 
   if (userStorage) {
     const user = JSON.parse(userStorage);
+    setLoggedUser(user);
     setLoggedUserName(user.name);
   }
 }, []);
 
-  function handleSubmit(e:any) {
+  async function handleSubmit(e:any) {
     e.preventDefault();
 
     const snippet:Snippet = {
       id: null,
-      user_id: 'AAAA-BBBB-CCCC-DDDD', // usuário tem que ser o usuário logado, isso aqui é só de exemplo
+      user_id: loggedUser.id,
       title: title,
       type: selectedType,
       language: language,
@@ -40,9 +43,15 @@ const SnippexForm = () => {
       updated_at: null,
       deleted_at: null
     };
-
-    // TODO: integrar com backend
+    
     console.log("Snippet criado:", snippet);
+
+    try {
+      await snippetService.postSnippet(snippet);
+      console.log("snippet enviado!")
+    } catch(error:unknown) {
+      console.log("erro ao criar snippet: " + error)
+    }
   }
 
   return (

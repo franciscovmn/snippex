@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import '../css/dashboard.css';
 import type { Snippet } from '../types/snippet';
 
+import { snippetService } from '../services/snippetService';
+
 const Dashboard: React.FC = () => {
   const [userName, setUserName] = useState<string>("");
   const [snippets, setSnippets] = useState<Snippet[]>([]);
@@ -43,6 +45,24 @@ const Dashboard: React.FC = () => {
       deleted_at: null,
     }
   ];
+
+  // TODO: Resolver depois
+
+  /*
+  useEffect(() => {
+    const fetchSnippets = async () => {
+      try {
+        const mySnippets: Snippet[] = await snippetService.getMySnippets();
+        setSnippets(mySnippets);
+        console.log("snippet enviado!");
+      } catch (error: unknown) {
+        console.log("erro buscar snippets " + error);
+      }
+    };
+
+    fetchSnippets();
+  }, []);
+  */
 
   useEffect(() => {
     setUserName("Alex Chen");

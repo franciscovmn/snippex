@@ -20,6 +20,11 @@ export const snippetService = {
     },
     
     //rotas protegidas (o interceptor adiciona o "Bearer token" aqui automaticamente)
+    getMySnippets: async () => {
+        const response = await api.get('/api/snippets/me');
+        return response.data;
+    },
+
     postSnippet: async (snippet:Snippet) => {
         const response = await api.post('/api/snippets/', snippet);
         return response.data;

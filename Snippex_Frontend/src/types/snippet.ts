@@ -1,6 +1,6 @@
 export interface Snippet {
   id: string | null; // UUID vira string
-  user_id: string;
+  user_id: number | string;
   title: string;
   type: string;
   language: string | null; 
