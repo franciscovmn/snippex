@@ -41,7 +41,7 @@ async function getPublicSnippets({ limit = 20, offset = 0 }) {
   const query = `
     SELECT
       s.*,
-      u.username,
+      u.user_name,
       u.email
     FROM snippets s
     JOIN users u ON u.id = s.user_id
@@ -77,7 +77,7 @@ async function getSnippetById(id, requestingUserId = null) {
   const query = `
     SELECT
       s.*,
-      u.username,
+      u.user_name,
       u.email
     FROM snippets s
     JOIN users u ON u.id = s.user_id
@@ -96,7 +96,7 @@ async function getSnippetsByTag(tag, { limit = 20, offset = 0 }) {
   const query = `
     SELECT
       s.*,
-      u.username
+      u.user_name
     FROM snippets s
     JOIN users u ON u.id = s.user_id
     WHERE $1 = ANY(s.tags)

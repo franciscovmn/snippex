@@ -2,7 +2,7 @@ const pool = require('../config/database')
 
 async function createUser({ name, user_name, email, password }) {
   const query = `
-    INSERT INTO usuario (name, user_name, email, password)
+    INSERT INTO users (name, user_name, email, password)
     VALUES ($1, $2, $3, $4)
     RETURNING id, name, user_name, email, created_at
   `
@@ -15,7 +15,7 @@ async function createUser({ name, user_name, email, password }) {
 
 async function findUserByEmail(email) {
   const query = `
-    SELECT * FROM usuario
+    SELECT * FROM users
     WHERE email = $1
   `
 
