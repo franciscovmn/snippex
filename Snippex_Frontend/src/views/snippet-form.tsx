@@ -36,7 +36,7 @@ const SnippexForm = () => {
       language: language,
       code: content,
       tags: tags.split(',').map(tag => tag.trim()),
-      is_public: isPublic,
+      isPublic: isPublic,
       explanation: null,
       suggestions: null,
       created_at: null,

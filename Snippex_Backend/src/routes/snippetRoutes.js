@@ -13,16 +13,16 @@ router.get('/', snippetController.listPublic)
 // Busca por tag — GET /api/snippets/tag/javascript
 router.get('/tag/:tag', snippetController.listByTag)
 
-// Detalhe de um snippet (optionalAuth: se logado, pode ver os próprios privados)
-// GET /api/snippets/:id
-router.get('/:id', optionalAuth, snippetController.getOne)
-
 // ──────────────────────────────────────────────────────────
 // Rotas PRIVADAS (requer autenticação)
 // ──────────────────────────────────────────────────────────
 
 // Snippets do usuário logado — GET /api/snippets/me
 router.get('/me', authenticate, snippetController.listMine)
+
+// Detalhe de um snippet (optionalAuth: se logado, pode ver os próprios privados)
+// GET /api/snippets/:id
+router.get('/:id', optionalAuth, snippetController.getOne)
 
 // Criar snippet — POST /api/snippets
 router.post('/', authenticate, snippetController.create)

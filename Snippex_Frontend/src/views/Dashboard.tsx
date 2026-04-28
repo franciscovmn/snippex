@@ -9,64 +9,30 @@ const Dashboard: React.FC = () => {
   const [userName, setUserName] = useState<string>("");
   const [snippets, setSnippets] = useState<Snippet[]>([]);
 
-  const snippetsLocal: Snippet[] = [
-    {
-      id: "1",
-      user_id: "alexchen",
-      title: "React Custom Hook: useDebounce",
-      type: "snippet",
-      language: "TYPESCRIPT",
-      code:
-        "import { useState, useEffect } from 'react';\n\nexport function useDebounce<T>(value: T, delay: number): T {\n  const [debouncedValue, setDebouncedValue] = useState<T>(value);",
-      is_public: true,
-      explanation:
-        "Este hook customizado do React atrasa a atualização de um valor até que um tempo especificado tenha passado desde a última alteração.",
-      tags: ["#react", "#hooks", "#typescript"],
-      suggestions: null,
-      created_at: new Date("2025-01-01"),
-      updated_at: null,
-      deleted_at: null,
-    },
-    {
-      id: "2",
-      user_id: "alexchen",
-      title: "AI Prompt: Code Review Assistant",
-      type: "prompt",
-      language: "PROMPT",
-      code:
-        "You are an expert code reviewer. Analyze the following code and provide structured feedback.",
-      is_public: true,
-      explanation:
-        "Este prompt transforma qualquer LLM em um revisor de código estruturado.",
-      tags: ["#ai-prompt", "#code-review", "#productivity"],
-      suggestions: null,
-      created_at: new Date("2025-01-01"),
-      updated_at: null,
-      deleted_at: null,
-    }
-  ];
-
-  // TODO: Resolver depois
-
-  /*
   useEffect(() => {
     const fetchSnippets = async () => {
       try {
+        let user= localStorage.getItem("user")
+        let username = "Alex Chen"
+
+        if(user) {
+          username = JSON.parse(user).name
+        }
+
+        setUserName(username);
+
         const mySnippets: Snippet[] = await snippetService.getMySnippets();
+
         setSnippets(mySnippets);
-        console.log("snippet enviado!");
+
+        console.log(mySnippets)
+
       } catch (error: unknown) {
         console.log("erro buscar snippets " + error);
       }
     };
 
     fetchSnippets();
-  }, []);
-  */
-
-  useEffect(() => {
-    setUserName("Alex Chen");
-    setSnippets(snippetsLocal);
   }, []);
 
   return (
@@ -131,7 +97,8 @@ const Dashboard: React.FC = () => {
                 <div className="card-labels">
                   <span className="label-lang">{snippet.language}</span>
                   <span className="label-status">
-                    {snippet.is_public ? "🟢 público" : "🔒 privado"}
+                   {/*  {snippet.isPublic ? "🟢 público" : "🔒 privado"} */}
+                    {snippet.isPublic == true ? "🟢 público" : "🔒 privado"}
                   </span>
                 </div>
               </div>

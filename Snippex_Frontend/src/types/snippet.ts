@@ -5,7 +5,7 @@ export interface Snippet {
   type: string;
   language: string | null; 
   code: string;
-  is_public: boolean;
+  isPublic: boolean;
   explanation: string | null;
   tags: string[] | null;
   suggestions: string[] | null;
