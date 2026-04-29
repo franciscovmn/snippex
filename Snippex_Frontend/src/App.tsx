@@ -15,6 +15,7 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/new" element={<SnippexForm />} />
+        <Route path="/edit/:id" element={<SnippexForm />} />
       </Routes>
     </BrowserRouter>
   );

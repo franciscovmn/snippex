@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import '../css/snippet-form.css'
 
 import type { Snippet } from '../types/snippet';
 import { snippetService } from '../services/snippetService';
 
 const SnippexForm = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(!!id);
   const [selectedType, setSelectedType] = useState('code');
   const [isPublic, setIsPublic] = useState(true);
 
@@ -16,20 +20,44 @@ const SnippexForm = () => {
   const [loggedUser, setLoggedUser] = useState<any>(null);
 
   useEffect(() => {
-  const userStorage = localStorage.getItem("user");
+    const userStorage = localStorage.getItem("user");
 
-  if (userStorage) {
-    const user = JSON.parse(userStorage);
-    setLoggedUser(user);
-    setLoggedUserName(user.name);
-  }
-}, []);
+    if (userStorage) {
+      const user = JSON.parse(userStorage);
+      setLoggedUser(user);
+      setLoggedUserName(user.name);
+    }
+  }, []);
+
+  // Efeito para carregar snippet em modo edição
+  useEffect(() => {
+    if (id) {
+      const loadSnippet = async () => {
+        try {
+          const snippet = await snippetService.getSnippetsById(id);
+          // Preencher os campos do formulário com os dados do snippet
+          setTitle(snippet.title || '');
+          setLanguage(snippet.language || 'JavaScript');
+          setContent(snippet.code || '');
+          setTags(snippet.tags?.join(', ') || '');
+          setSelectedType(snippet.type || 'code');
+          setIsPublic(snippet.isPublic ?? true);
+          setIsLoading(false);
+        } catch (error: unknown) {
+          console.error("Erro ao carregar snippet:", error);
+          alert("Não foi possível carregar o snippet.");
+          navigate('/dashboard');
+        }
+      };
+      loadSnippet();
+    }
+  }, [id, navigate]);
 
   async function handleSubmit(e:any) {
     e.preventDefault();
 
     const snippet:Snippet = {
-      id: null,
+      id: id || null,
       user_id: loggedUser.id,
       title: title,
       type: selectedType,
@@ -44,22 +72,48 @@ const SnippexForm = () => {
       deleted_at: null
     };
     
-    console.log("Snippet criado:", snippet);
-
     try {
-      await snippetService.postSnippet(snippet);
-      console.log("snippet enviado!")
+      if (id) {
+        // Modo edição
+        await snippetService.updateSnippet(id, snippet);
+        console.log("Snippet atualizado com sucesso!");
+        alert("Snippet atualizado com sucesso!");
+        navigate('/dashboard');
+      } else {
+        // Modo criação
+        await snippetService.postSnippet(snippet);
+        console.log("Snippet criado com sucesso!");
+        alert("Snippet criado com sucesso!");
+        navigate('/dashboard');
+      }
     } catch(error:unknown) {
-      console.log("erro ao criar snippet: " + error)
+      console.error("Erro ao salvar snippet:", error);
+      alert("Não foi possível salvar o snippet. Tente novamente.");
     }
+  }
+
+  const handleCancel = () => {
+    navigate('/dashboard');
+  };
+
+  if (isLoading) {
+    return (
+      <div className="app-container">
+        <main className="main-content">
+          <section className="form-container">
+            <p>A carregar snippet...</p>
+          </section>
+        </main>
+      </div>
+    );
   }
 
   return (
     <div className="app-container">
       <main className="main-content">
         <section className="form-container">
-          <h2>Criar Snippet</h2>
-          <p className="subtitle">Salve um novo snippet de código ou prompt de IA</p>
+          <h2>{id ? 'Editar Snippet' : 'Criar Snippet'}</h2>
+          <p className="subtitle">{id ? 'Atualize seu snippet' : 'Salve um novo snippet de código ou prompt de IA'}</p>
 
           <form onSubmit={handleSubmit}>
             
@@ -160,9 +214,9 @@ const SnippexForm = () => {
 
             <div className="form-actions">
               <button className="btn-primary" type="submit">
-                Salvar Snippet
+                {id ? 'Atualizar Snippet' : 'Salvar Snippet'}
               </button>
-              <button className="btn-ghost" type="button">
+              <button className="btn-ghost" type="button" onClick={handleCancel}>
                 Cancelar
               </button>
             </div>
