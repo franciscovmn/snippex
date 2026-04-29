@@ -10,4 +10,41 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid()) @db.Uuid
+  user_name String    @unique
+  email     String    @unique
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  snippets  Snippet[]
+
+  @@map("users")
+}
+
+model Snippet {
+  id          String    @id @default(uuid()) @db.Uuid
+
+  user_id     String    @db.Uuid
+  user        User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  title       String
+  type        String    @default("code")
+  language    String?
+  code        String    @db.Text
+  is_public   Boolean   @default(false)
+  explanation String?   @db.Text
+  tags        String[]  @default([])
+  suggestions String[]  @default([])
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at  DateTime? @db.Timestamptz(6)
+
+  @@index([user_id])
+  @@index([is_public])
+  @@index([deleted_at])
+  @@map("snippets")
 }
