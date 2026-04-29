@@ -1,21 +1,35 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const TopBar: React.FC = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      navigate(`/dashboard?search=${encodeURIComponent(searchTerm)}`);
+    } else {
+      navigate(`/dashboard`);
+    }
+  };
+
   return (
     <header className="topbar">
-      <div className="search-container">
+      <form className="search-container" onSubmit={handleSearch}>
         <input 
           type="text" 
           placeholder="Pesquisar snippets..." 
           className="search-input" 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
-      </div>
+      </form>
       
-      {/* Botões extras do lado direito (ex: sino de notificação) */}
       <div className="topbar-actions">
-        <button style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}>
-          🔔
-        </button>
+        <Link to="/new" className="btn-new" style={{ padding: '0.5rem 1rem', textDecoration: 'none', borderRadius: '4px' }}>
+          + Novo Snippet
+        </Link>
       </div>
     </header>
   );

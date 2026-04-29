@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Snippet } from '../types/snippet';
 import { snippetService } from '../services/snippetService';
 
 const Dashboard: React.FC = () => {
   const [communitySnippets, setCommunitySnippets] = useState<Snippet[]>([]);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const searchQuery = searchParams.get('search') || '';
 
   useEffect(() => {
     const fetchCommunitySnippets = async () => {
       try {
-        // AQUI você deve chamar o serviço que traz todos os snippets públicos da comunidade
-        // Se ainda não existir na API, você precisará criá-lo.
         const publicSnippets: Snippet[] = await snippetService.getAllSnippets(); 
         setCommunitySnippets(publicSnippets);
       } catch (error: unknown) {
@@ -21,31 +22,43 @@ const Dashboard: React.FC = () => {
     fetchCommunitySnippets();
   }, []);
 
+  const filteredSnippets = communitySnippets.filter(snippet => {
+    if (!searchQuery) return true;
+    const lowerQuery = searchQuery.toLowerCase();
+    return (
+      snippet.title.toLowerCase().includes(lowerQuery) ||
+      (snippet.tags && snippet.tags.some(tag => tag.toLowerCase().includes(lowerQuery))) ||
+      snippet.language?.toLowerCase().includes(lowerQuery)
+    );
+  });
+
   return (
     <main className="main-content">
       <div className="content-header">
         <h1>Dashboard (Comunidade)</h1>
-        <Link to="/new" className="btn-new">
-          + Novo Snippet
-        </Link>
       </div>
 
       <section className="content-area">
         <h2>Snippets Recentes</h2>
-        <p className="subtitle">Explore {communitySnippets.length} snippets da comunidade</p>
+        <p className="subtitle">
+          {searchQuery ? `Resultados da busca por "${searchQuery}"` : `Explore ${communitySnippets.length} snippets da comunidade`}
+        </p>
 
-        {/* A MUDANÇA COMEÇA AQUI: Adicionando o Grid */}
         <div className="snippets-grid">
-          {communitySnippets.length === 0 ? (
+          {filteredSnippets.length === 0 ? (
             <div className="no-snippets">
-              <p>Nenhum snippet público encontrado ainda.</p>
+              <p>Nenhum snippet encontrado.</p>
             </div>
           ) : (
-            communitySnippets.map((snippet) => (
-              <div key={snippet.id} className="snippet-card">
+            filteredSnippets.map((snippet) => (
+              <div 
+                key={snippet.id} 
+                className="snippet-card" 
+                onClick={() => navigate(`/snippet/${snippet.id}`)}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className="card-header">
-                  {/* Correção do Autor: Tentamos pegar do objeto user enviado pelo backend */}
-                  <span className="author">por {snippet.user?.name || "Anônimo"}</span> 
+                  <span className="author">por {(snippet as any).user_name || "Anônimo"}</span> 
                   <div className="card-header-tags">
                     <span className="language">{snippet.language}</span>
                   </div>

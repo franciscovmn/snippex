@@ -14,11 +14,10 @@ const Sidebar: React.FC = () => {
   }, []);
 
   const handleLogout = () => {
-    // Confirma se o usuário quer sair
     if(window.confirm("Deseja realmente sair?")) {
       localStorage.removeItem("user");
       localStorage.removeItem("token");
-      navigate("/login"); // Manda de volta pra tela de login
+      navigate("/login");
     }
   };
 

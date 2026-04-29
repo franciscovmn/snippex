@@ -204,6 +204,12 @@ body {
   align-items: center;
 }
 
+.content-header, .content-area {
+  width: 100%;
+  max-width: 800px;
+  text-align: left;
+}
+
 .header {
   display: flex;
   justify-content: space-between;
@@ -253,6 +259,7 @@ kbd {
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 24px;
+  width: 100%;
   max-width: 800px;
 }
 
@@ -348,4 +355,20 @@ kbd {
   border-radius: 3px;
   color: black;
   font-weight: bold;
+}
+
+.snippet-actions {
+  display: flex;
+  gap: 15px;
+}
+
+.btn-action {
+  color: white;
+  font-size: 0.9rem;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.btn-action:hover {
+  opacity: 1;
 }

@@ -29,13 +29,11 @@ const SnippexForm = () => {
     }
   }, []);
 
-  // Efeito para carregar snippet em modo edição
   useEffect(() => {
     if (id) {
       const loadSnippet = async () => {
         try {
           const snippet = await snippetService.getSnippetsById(id);
-          // Preencher os campos do formulário com os dados do snippet
           setTitle(snippet.title || '');
           setLanguage(snippet.language || 'JavaScript');
           setContent(snippet.code || '');
@@ -63,7 +61,7 @@ const SnippexForm = () => {
       type: selectedType,
       language: language,
       code: content,
-      tags: tags.split(',').map(tag => tag.trim()),
+      tags: tags ? tags.split(',').map(tag => tag.trim()).filter(Boolean) : [],
       isPublic: isPublic,
       explanation: null,
       suggestions: null,
@@ -74,13 +72,11 @@ const SnippexForm = () => {
     
     try {
       if (id) {
-        // Modo edição
         await snippetService.updateSnippet(id, snippet);
         console.log("Snippet atualizado com sucesso!");
         alert("Snippet atualizado com sucesso!");
         navigate('/dashboard');
       } else {
-        // Modo criação
         await snippetService.postSnippet(snippet);
         console.log("Snippet criado com sucesso!");
         alert("Snippet criado com sucesso!");
@@ -98,133 +94,129 @@ const SnippexForm = () => {
 
   if (isLoading) {
     return (
-      <div className="app-container">
-        <main className="main-content">
-          <section className="form-container">
-            <p>A carregar snippet...</p>
-          </section>
-        </main>
-      </div>
+      <main className="main-content">
+        <section className="form-container">
+          <p>A carregar snippet...</p>
+        </section>
+      </main>
     );
   }
 
   return (
-    <div className="app-container">
-      <main className="main-content">
-        <section className="form-container">
-          <h2>{id ? 'Editar Snippet' : 'Criar Snippet'}</h2>
-          <p className="subtitle">{id ? 'Atualize seu snippet' : 'Salve um novo snippet de código ou prompt de IA'}</p>
+    <main className="main-content">
+      <section className="form-container">
+        <h2>{id ? 'Editar Snippet' : 'Criar Snippet'}</h2>
+        <p className="subtitle">{id ? 'Atualize seu snippet' : 'Salve um novo snippet de código ou prompt de IA'}</p>
 
-          <form onSubmit={handleSubmit}>
-            
+        <form onSubmit={handleSubmit}>
+          
+          <div className="form-group">
+            <label>Título</label>
+            <input 
+              type="text" 
+              placeholder="ex: React Custom Hook: useDebounce"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </div>
+
+          <div className="form-row">
             <div className="form-group">
-              <label>Título</label>
-              <input 
-                type="text" 
-                placeholder="ex: React Custom Hook: useDebounce"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label>TIPO</label>
-                <div className="toggle-group">
-                  <button 
-                    type="button"
-                    className={selectedType === 'code' ? 'active' : ''} 
-                    onClick={() => setSelectedType('code')}
-                  >
-                    Snippet de Código
-                  </button>
-                  <button 
-                    type="button"
-                    className={selectedType === 'prompt' ? 'active' : ''} 
-                    onClick={() => setSelectedType('prompt')}
-                  >
-                    Prompt de IA
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label>Linguagem</label>
-              <div className="select-wrapper">
-                <select 
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
+              <label>TIPO</label>
+              <div className="toggle-group">
+                <button 
+                  type="button"
+                  className={selectedType === 'code' ? 'active' : ''} 
+                  onClick={() => setSelectedType('code')}
                 >
-                  <option>JavaScript</option>
-                  <option>TypeScript</option>
-                  <option>Python</option>
-                </select>
-                <div className="select-arrow">▼</div>
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label>Conteúdo</label>
-              <textarea 
-                placeholder="Cole seu código aqui..." 
-                rows={12}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Tags</label>
-              <input 
-                type="text" 
-                placeholder="ex: react, hooks, debounce"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="section-label">VISIBILIDADE</label>
-              <div className="visibility-options">
-                <div 
-                  className={`vis-card ${isPublic === true ? 'selected' : ''}`}
-                  onClick={() => setIsPublic(true)}
+                  Snippet de Código
+                </button>
+                <button 
+                  type="button"
+                  className={selectedType === 'prompt' ? 'active' : ''} 
+                  onClick={() => setSelectedType('prompt')}
                 >
-                  <strong>Público</strong>
-                  <span>Visível para a comunidade</span>
-                </div>
-                <div 
-                  className={`vis-card ${isPublic === false ? 'selected' : ''}`}
-                  onClick={() => setIsPublic(false)}
-                >
-                  <strong>Privado</strong>
-                  <span>Visível apenas para você</span>
-                </div>
+                  Prompt de IA
+                </button>
               </div>
             </div>
+          </div>
 
-            <div className="ai-box">
-              <span className="ai-emoji">✨</span>
-              <div className="ai-text">
-                <strong>Explicação da IA</strong>
-                <p>A explicação da IA será gerada automaticamente após salvar</p>
+          <div className="form-group">
+            <label>Linguagem</label>
+            <div className="select-wrapper">
+              <select 
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+              >
+                <option>JavaScript</option>
+                <option>TypeScript</option>
+                <option>Python</option>
+              </select>
+              <div className="select-arrow">▼</div>
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Conteúdo</label>
+            <textarea 
+              placeholder="Cole seu código aqui..." 
+              rows={12}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Tags</label>
+            <input 
+              type="text" 
+              placeholder="ex: react, hooks, debounce"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="section-label">VISIBILIDADE</label>
+            <div className="visibility-options">
+              <div 
+                className={`vis-card ${isPublic === true ? 'selected' : ''}`}
+                onClick={() => setIsPublic(true)}
+              >
+                <strong>Público</strong>
+                <span>Visível para a comunidade</span>
+              </div>
+              <div 
+                className={`vis-card ${isPublic === false ? 'selected' : ''}`}
+                onClick={() => setIsPublic(false)}
+              >
+                <strong>Privado</strong>
+                <span>Visível apenas para você</span>
               </div>
             </div>
+          </div>
 
-            <div className="form-actions">
-              <button className="btn-primary" type="submit">
-                {id ? 'Atualizar Snippet' : 'Salvar Snippet'}
-              </button>
-              <button className="btn-ghost" type="button" onClick={handleCancel}>
-                Cancelar
-              </button>
+          <div className="ai-box">
+            <span className="ai-emoji">✨</span>
+            <div className="ai-text">
+              <strong>Explicação da IA</strong>
+              <p>A explicação da IA será gerada automaticamente após salvar</p>
             </div>
+          </div>
 
-          </form>
-        </section>
-      </main>
-    </div>
+          <div className="form-actions">
+            <button className="btn-primary" type="submit">
+              {id ? 'Atualizar Snippet' : 'Salvar Snippet'}
+            </button>
+            <button className="btn-ghost" type="button" onClick={handleCancel}>
+              Cancelar
+            </button>
+          </div>
+
+        </form>
+      </section>
+    </main>
   );
 };
 
