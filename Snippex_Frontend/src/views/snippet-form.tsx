@@ -10,10 +10,10 @@ const SnippexForm = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(!!id);
   const [selectedType, setSelectedType] = useState('code');
-  const [isPublic, setIsPublic] = useState(true);
+  const [visibility, setVisibility] = useState<'PUBLIC' | 'TEAM' | 'PRIVATE'>('PUBLIC');
 
   const [title, setTitle] = useState('');
-  const [language, setLanguage] = useState('JavaScript');
+  const [language, setLanguage] = useState('JavaScript')
   const [content, setContent] = useState('');
   const [tags, setTags] = useState('');
   const [loggedUserName, setLoggedUserName] = useState('');
@@ -39,7 +39,7 @@ const SnippexForm = () => {
           setContent(snippet.code || '');
           setTags(snippet.tags?.join(', ') || '');
           setSelectedType(snippet.type || 'code');
-          setIsPublic(snippet.isPublic ?? true);
+          setVisibility(snippet.visibility ?? 'PUBLIC');
           setIsLoading(false);
         } catch (error: unknown) {
           console.error("Erro ao carregar snippet:", error);
@@ -62,7 +62,8 @@ const SnippexForm = () => {
       language: language,
       code: content,
       tags: tags ? tags.split(',').map(tag => tag.trim()).filter(Boolean) : [],
-      isPublic: isPublic,
+      isPublic: visibility === 'PUBLIC',
+      visibility: visibility, // novo campo adicionado para ter a funcionalidade compativel com a visibilidade da comunidade
       explanation: null,
       suggestions: null,
       created_at: null,
@@ -179,24 +180,29 @@ const SnippexForm = () => {
 
           <div className="form-group">
             <label className="section-label">VISIBILIDADE</label>
-            <div className="visibility-options">
-              <div 
-                className={`vis-card ${isPublic === true ? 'selected' : ''}`}
-                onClick={() => setIsPublic(true)}
-              >
-                <strong>Público</strong>
-                <span>Visível para a comunidade</span>
-              </div>
-              <div 
-                className={`vis-card ${isPublic === false ? 'selected' : ''}`}
-                onClick={() => setIsPublic(false)}
-              >
-                <strong>Privado</strong>
-                <span>Visível apenas para você</span>
+        <div className="visibility-options">
+          {['PUBLIC', 'TEAM', 'PRIVATE'].map((type) => (
+            <div
+              key={type}
+              className={`vis-card ${visibility === type ? 'selected' : ''}`}
+              onClick={() => setVisibility(type as 'PUBLIC' | 'TEAM' | 'PRIVATE')}
+            >
+              <div className="vis-info">
+                <strong>
+                  {type === 'PUBLIC' && '🌐 Público'}
+                  {type === 'TEAM' && '👥 Time'}
+                  {type === 'PRIVATE' && '🔒 Privado'}
+                </strong>
+                <span>
+                  {type === 'PUBLIC' && 'Visível para a comunidade'}
+                  {type === 'TEAM' && 'Visível apenas para seu time'}
+                  {type === 'PRIVATE' && 'Visível apenas para você'}
+                </span>
               </div>
             </div>
+          ))}
+        </div>
           </div>
-
           <div className="ai-box">
             <span className="ai-emoji">✨</span>
             <div className="ai-text">

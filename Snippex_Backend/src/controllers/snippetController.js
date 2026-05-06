@@ -6,7 +6,8 @@ const repo = require('../repositories/snippetRepository')
 async function create(req, res) {
   try {
     const userId = req.user.id // vem do middleware de autenticação
-    const { title, type, language, code, isPublic, tags, suggestions } = req.body
+    const teamId = req.user.team_id
+    const { title, type, language, code, visibility, tags, suggestions } = req.body
 
     // Validação básica
     if (!title || !code) {
@@ -15,9 +16,12 @@ async function create(req, res) {
     if (type === 'code' && !language) {
       return res.status(400).json({ error: 'language é obrigatório para snippets de código.' })
     }
+    const VALID = ['PUBLIC', 'TEAM', 'PRIVATE']
+    const resolvedVisibility = VALID.includes(visibility) ? visibility : 'PUBLIC'
+
 
     const snippet = await repo.createSnippet({
-      userId, title, type, language, code, isPublic, tags, suggestions,
+      userId, title, type, language, code, visibility: resolvedVisibility, teamId, tags, suggestions,
     })
 
     // Dispara geração da explicação IA em background (sem await — não bloqueia a resposta)
@@ -37,6 +41,12 @@ async function listPublic(req, res) {
   try {
     const limit  = parseInt(req.query.limit)  || 20
     const offset = parseInt(req.query.offset) || 0
+
+    // aqui,  Se autenticado, usa filtro completo, se anônimo, só PUBLIC
+    if (req.user) {
+      const snippets = await repo.getVisibleSnippets(req.user.id, req.user.team_id, { limit, offset })
+      return res.json(snippets)
+    }
 
     const snippets = await repo.getPublicSnippets({ limit, offset })
     return res.json(snippets)
@@ -67,8 +77,9 @@ async function getOne(req, res) {
   try {
     const { id } = req.params
     const requestingUserId = req.user?.id ?? null // pode ser rota pública
+    const requestingTeamId = req.user?.team_id ?? null 
 
-    const snippet = await repo.getSnippetById(id, requestingUserId)
+    const snippet = await repo.getSnippetById(id, requestingUserId, requestingTeamId)
 
     if (!snippet) {
       return res.status(404).json({ error: 'Snippet não encontrado.' })
@@ -105,10 +116,14 @@ async function update(req, res) {
   try {
     const { id } = req.params
     const userId = req.user.id
-    const { title, language, code, isPublic, tags, suggestions } = req.body
+
+    const { title, language, code, visibility, tags, suggestions } = req.body
+
+    const VALID = ['PUBLIC', 'TEAM', 'PRIVATE']
+    const resolvedVisibility = visibility && VALID.includes(visibility) ? visibility : undefined
 
     const updated = await repo.updateSnippet(id, userId, {
-      title, language, code, isPublic, tags, suggestions,
+      title, language, code, visibility: resolvedVisibility, tags, suggestions,
     })
 
     if (!updated) {
