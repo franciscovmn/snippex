@@ -60,7 +60,11 @@ const SnippetView: React.FC = () => {
           <span className="author">por {(snippet as any).user_name || "Anônimo"}</span>
           <span className="language">{snippet.language}</span>
           <span className="type-label">{snippet.type === 'code' ? '💻' : '🤖'} {snippet.type}</span>
-          <span>🔖 {snippet.isPublic || (snippet as any).is_public ? '🌐 Público' : '🔒 Privado'}</span>
+          <span className={`badge-visibility ${snippet.visibility?.toLowerCase()}`}>
+              {snippet.visibility === 'PUBLIC' && '🌐 Público'}
+              {snippet.visibility === 'PRIVATE' && '🔒 Privado'}
+              {snippet.visibility === 'TEAM' && '👥 Time'}
+          </span>
         </div>
 
         {snippet.tags && snippet.tags.length > 0 && (

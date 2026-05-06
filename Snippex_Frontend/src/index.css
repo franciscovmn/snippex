@@ -84,3 +84,31 @@ input {
 abbr {
   text-decoration: none;
 }
+
+
+
+/* Ajuste específico para alinhar os cards da imagem */
+.visibility-options {
+  display: grid;
+  /* Força 3 colunas iguais sempre que houver espaço */
+  grid-template-columns: repeat(3, 1fr); 
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.vis-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px; /* Reduzi um pouco para caber melhor em telas menores */
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+  min-height: 85px; /* Garante que todos tenham a mesma altura */
+}
+
+.vis-card.selected {
+  border-color: var(--color-accent);
+  background: var(--color-accent-dim);
+}

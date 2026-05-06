@@ -92,9 +92,12 @@ const MySnippets: React.FC = () => {
                 <code>{snippet.code?.substring(0, 200)}...</code>
               </pre>
               <div className="card-footer">
-                <div className="stats">
-                  <span>🔖 {snippet.isPublic || (snippet as any).is_public ? '🌐 Público' : '🔒 Privado'}</span>
-                </div>
+              <div className="stats">
+                  <span className={`status-icon ${snippet.visibility?.toLowerCase()}`}>
+                    {snippet.visibility === 'PUBLIC' ? '🌐' : snippet.visibility === 'PRIVATE' ? '🔒' : '👥'}
+                    {snippet.visibility}
+                  </span>
+              </div>
                 <div className="snippet-actions">
                   <button onClick={(e) => handleEdit(e, snippet.id)} className="btn-action btn-edit">✏️ Editar</button>
                   <button onClick={(e) => handleDelete(e, snippet.id)} className="btn-action btn-delete">🗑️ Eliminar</button>
