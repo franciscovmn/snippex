@@ -8,19 +8,24 @@ const pool = require('../config/database')
  * Cria um novo snippet no banco.
  * tags e suggestions são arrays de string (TEXT[]).
  */
-async function createSnippet({ userId, title, type, language, code, isPublic, tags, suggestions }) {
+async function createSnippet({ userId, title, type, language, code, visibility, tags, suggestions, teamId }) {
   const query = `
-    INSERT INTO snippets (user_id, title, type, language, code, is_public, tags, suggestions)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    INSERT INTO snippets (user_id, title, type, language, code, is_public, visibility, team_id, tags, suggestions)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
     RETURNING *
   `
+  // is_public continua sendo preenchido para compatibilidade com código existente
+  const isPublic = visibility === 'PUBLIC'
+
   const values = [
     userId,
     title,
-    type ?? 'code',           // 'code' | 'prompt'
-    language ?? null,         // null quando type = 'prompt'
+    type ?? 'code',
+    language ?? null,
     code,
-    isPublic ?? false,
+    isPublic,
+    visibility ?? 'PUBLIC',
+    teamId ?? null,
     tags ?? [],
     suggestions ?? [],
   ]
@@ -37,15 +42,13 @@ async function createSnippet({ userId, title, type, language, code, isPublic, ta
  * Retorna snippets públicos para o feed da comunidade.
  * Suporta paginação por cursor (offset simples para o MVP).
  */
+
 async function getPublicSnippets({ limit = 20, offset = 0 }) {
   const query = `
-    SELECT
-      s.*,
-      u.user_name,
-      u.email
+    SELECT s.*, u.user_name, u.email
     FROM snippets s
     JOIN users u ON u.id = s.user_id
-    WHERE s.is_public = true
+    WHERE s.visibility = 'PUBLIC'
       AND s.deleted_at IS NULL
     ORDER BY s.created_at DESC
     LIMIT $1 OFFSET $2
@@ -54,6 +57,24 @@ async function getPublicSnippets({ limit = 20, offset = 0 }) {
   return rows
 }
 
+
+async function getVisibleSnippets(userId, teamId, { limit = 20, offset = 0 }) {
+  const query = `
+    SELECT s.*, u.user_name, u.email
+    FROM snippets s
+    JOIN users u ON u.id = s.user_id
+    WHERE s.deleted_at IS NULL
+      AND (
+        s.visibility = 'PUBLIC'
+        OR (s.visibility = 'TEAM'    AND s.team_id = $2)
+        OR (s.visibility = 'PRIVATE' AND s.user_id = $1)
+      )
+    ORDER BY s.created_at DESC
+    LIMIT $3 OFFSET $4
+  `
+  const { rows } = await pool.query(query, [userId, teamId, limit, offset])
+  return rows
+}
 /**
  * Retorna todos os snippets do usuário autenticado (públicos + privados).
  */
@@ -73,19 +94,20 @@ async function getSnippetsByUser(userId) {
  * Retorna um snippet pelo ID.
  * Snippets privados só são retornados se o userId bater com o dono.
  */
-async function getSnippetById(id, requestingUserId = null) {
+async function getSnippetById(id, requestingUserId = null, requestingTeamId = null) {
   const query = `
-    SELECT
-      s.*,
-      u.user_name,
-      u.email
+    SELECT s.*, u.user_name, u.email
     FROM snippets s
     JOIN users u ON u.id = s.user_id
     WHERE s.id = $1
       AND s.deleted_at IS NULL
-      AND (s.is_public = true OR s.user_id = $2)
+      AND (
+        s.visibility = 'PUBLIC'
+        OR (s.visibility = 'TEAM'    AND s.team_id = $3)
+        OR (s.visibility = 'PRIVATE' AND s.user_id = $2)
+      )
   `
-  const { rows } = await pool.query(query, [id, requestingUserId])
+  const { rows } = await pool.query(query, [id, requestingUserId, requestingTeamId])
   return rows[0] ?? null
 }
 
@@ -100,7 +122,7 @@ async function getSnippetsByTag(tag, { limit = 20, offset = 0 }) {
     FROM snippets s
     JOIN users u ON u.id = s.user_id
     WHERE $1 = ANY(s.tags)
-      AND s.is_public = true
+      AND s.visibility = 'PUBLIC'
       AND s.deleted_at IS NULL
     ORDER BY s.created_at DESC
     LIMIT $2 OFFSET $3
@@ -118,25 +140,29 @@ async function getSnippetsByTag(tag, { limit = 20, offset = 0 }) {
  * O trigger no banco cuida do updated_at automaticamente.
  * Retorna null se o snippet não pertencer ao usuário.
  */
-async function updateSnippet(id, userId, { title, language, code, isPublic, tags, suggestions }) {
+async function updateSnippet(id, userId, { title, language, code, visibility, tags, suggestions }) {
+  const isPublic = visibility ? visibility === 'PUBLIC' : undefined
+
   const query = `
     UPDATE snippets
     SET
       title       = COALESCE($3, title),
       language    = COALESCE($4, language),
       code        = COALESCE($5, code),
-      is_public   = COALESCE($6, is_public),
-      tags        = COALESCE($7, tags),
-      suggestions = COALESCE($8, suggestions)
+      visibility  = COALESCE($6, visibility),
+      is_public   = COALESCE($7, is_public),
+      tags        = COALESCE($8, tags),
+      suggestions = COALESCE($9, suggestions)
     WHERE id = $1
       AND user_id = $2
       AND deleted_at IS NULL
     RETURNING *
   `
-  const values = [id, userId, title, language, code, isPublic, tags, suggestions]
+  const values = [id, userId, title, language, code, visibility ?? null, isPublic ?? null, tags, suggestions]
   const { rows } = await pool.query(query, values)
   return rows[0] ?? null
 }
+
 
 /**
  * Salva a explicação gerada pela IA.
@@ -177,6 +203,7 @@ async function deleteSnippet(id, userId) {
 module.exports = {
   createSnippet,
   getPublicSnippets,
+  getVisibleSnippets, // para ter a comunidade com visibilidade
   getSnippetsByUser,
   getSnippetById,
   getSnippetsByTag,

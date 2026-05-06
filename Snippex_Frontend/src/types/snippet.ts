@@ -1,3 +1,5 @@
+export type Visibility = 'PUBLIC' | 'TEAM' | 'PRIVATE'
+
 export interface Snippet {
   id: string | null; // UUID vira string
   user_id: number | string;
@@ -6,6 +8,7 @@ export interface Snippet {
   language: string | null; 
   code: string;
   isPublic: boolean;
+  visibility:  Visibility // novo campo para mostrar o tipo de coumunidade
   explanation: string | null;
   tags: string[] | null;
   suggestions: string[] | null;
