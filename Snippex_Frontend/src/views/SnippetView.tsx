@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { snippetService } from '../services/snippetService';
+import { commentService } from '../services/commentService';
+import type { CreateCommentInput } from '../services/commentService';
 import type { Snippet } from '../types/snippet';
+import type { Comment } from '../types/comment';
 
 const SnippetView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -9,6 +12,24 @@ const SnippetView: React.FC = () => {
   const [snippet, setSnippet] = useState<Snippet | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState('');
+
+
+  const loadComments = async () => { 
+    try {
+      if (id) {
+        const comments = await commentService.getBySnippetId(id);
+        console.log(comments);
+        setComments(comments);
+      }
+    } catch (err) {
+        console.error(err);
+        setError('Não foi possível carregar os comentários');
+    } finally {
+        setIsLoading(false);
+    }
+  }
 
   useEffect(() => {
     const loadSnippet = async () => {
@@ -24,8 +45,52 @@ const SnippetView: React.FC = () => {
         setIsLoading(false);
       }
     };
+    loadComments();
     loadSnippet();
   }, [id]);
+
+  const handleAddComment = async (comment:string) => {
+    console.log(comment);
+
+    if (!id) {
+      console.error("id não pode ser vazio");
+      return;
+    }
+
+    let newComment:CreateCommentInput = {
+      snippet_id: id,
+      content: comment
+    };
+    
+    await commentService.postComment(newComment);
+    loadComments();
+  }
+
+  const handleUpdateComment = async() => {
+    //TODO
+  }
+
+  const handleDeleteComment = async(id:string) =>  {
+    if (!id) {
+      console.error("id não pode ser vazio");
+      return;
+    }
+
+    console.log(id);
+
+    if (!window.confirm("Deseja mesmo excluir o comentário")) return;
+    await commentService.deleteComment(id);
+
+    loadComments();
+  }
+
+  //isso vai ser usado no comentario
+  const userStorage = localStorage.getItem("user");
+  let loggedUserId:string
+
+  if(userStorage) {
+    loggedUserId = JSON.parse(userStorage).id;
+  }
 
   if (isLoading) {
     return (
@@ -88,6 +153,96 @@ const SnippetView: React.FC = () => {
             </div>
           </div>
         )}
+
+        <div style={{ marginTop: '2rem' }}>
+          <h2 style={{ marginBottom: '1rem' }}>💬 Comentários</h2>
+
+          {/* ABA DE NOVO COMENTÁRIO */}
+          <div style={{marginBottom: '1.5rem',padding: '1rem',background: '#1a1a1a',borderRadius: '10px',border: '1px solid #2c2c2c'}}>
+            <textarea
+              placeholder="Escreva um comentário..."
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              rows={3}
+              style={{width: '100%', resize: 'none', padding: '0.5rem', borderRadius: '6px', border: '1px solid #333', background: '#121212', color: '#fff', marginBottom: '0.5rem'}}
+            />
+
+            <button
+              onClick={() => handleAddComment(newComment)}
+              style={{background: '#2ecc71',border: 'none',color: '#fff',padding: '0.4rem 0.8rem',borderRadius: '6px',cursor: 'pointer',fontSize: '0.85rem'}}
+            >
+              Comentar
+            </button>
+          </div> 
+        </div>
+
+
+
+          <div style={{ marginTop: '2rem' }}>
+            <h3 style={{ marginBottom: '1rem' }}>💬 Comentários da comunidade</h3>
+
+            {comments.length === 0 ? (
+              <p style={{ opacity: 0.6 }}>Nenhum comentário ainda.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {comments.map((comment) => (
+                  <div
+                    key={comment.id}
+                    style={{
+                      background: '#1f1f1f',
+                      padding: '1rem',
+                      borderRadius: '10px',
+                      border: '1px solid #2c2c2c'
+                    }}
+                  >
+                    {/* header */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '0.5rem'
+                      }}
+                    >
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <strong style={{ fontSize: '0.9rem' }}>
+                          {(comment as any).user_name || 'anônimo'}
+                        </strong>
+                        <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>
+                          {new Date(comment.created_at).toLocaleString()}
+                        </span>
+                      </div>
+
+                      {/* botões */}
+                      {comment.user_id === loggedUserId && (
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button
+                            onClick={() => handleUpdateComment()}
+                            style={{background: '#2d6cdf',border: 'none',color: '#fff',padding: '0.3rem 0.6rem',borderRadius: '6px',cursor: 'pointer',fontSize: '0.75rem'}}
+                          >
+                            Editar
+                          </button>
+
+                          <button
+                            onClick={() => handleDeleteComment(comment.id)}
+                            style={{background: '#e74c3c',border: 'none',color: '#fff',padding: '0.3rem 0.6rem',borderRadius: '6px',cursor: 'pointer',fontSize: '0.75rem'}}
+                          >
+                            Excluir
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* conteúdo */}
+                    <p style={{ margin: 0, lineHeight: 1.4 }}>
+                      {comment.content}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        
       </section>
     </main>
   );
