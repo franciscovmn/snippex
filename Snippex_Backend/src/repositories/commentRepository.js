@@ -16,7 +16,8 @@ async function createComment({snippet_id, user_id, content}) {
 async function updateComment(id, userId, {content}) {
     const query = `
         UPDATE comments
-            SET content = $3
+            SET content = $3,
+            updated_at = NOW()
         WHERE 
             id = $1
             AND user_id = $2
