@@ -5,6 +5,7 @@ import { commentService } from '../services/commentService';
 import type { CreateCommentInput } from '../services/commentService';
 import type { Snippet } from '../types/snippet';
 import type { Comment } from '../types/comment';
+import EditCommentModal from './EditCommentModal';
 
 const SnippetView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -14,7 +15,7 @@ const SnippetView: React.FC = () => {
   const [error, setError] = useState('');
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
-
+  const [editingComment, setEditingComment] = useState<Comment | null>(null);
 
   const loadComments = async () => { 
     try {
@@ -66,9 +67,9 @@ const SnippetView: React.FC = () => {
     loadComments();
   }
 
-  const handleUpdateComment = async() => {
-    //TODO
-  }
+  const handleUpdateComment = (comment: Comment) => {
+    setEditingComment(comment);
+  };
 
   const handleDeleteComment = async(id:string) =>  {
     if (!id) {
@@ -161,6 +162,15 @@ const SnippetView: React.FC = () => {
         <div style={{ marginTop: '2rem' }}>
           <h2 style={{ marginBottom: '1rem' }}>💬 Comentários</h2>
 
+          {editingComment && (
+            <EditCommentModal
+              commentId={editingComment.id}
+              initialContent={editingComment.content}
+              onClose={() => setEditingComment(null)}
+              onUpdated={loadComments}
+            />
+          )}
+
           {/* ABA DE NOVO COMENTÁRIO */}
           <div style={{marginBottom: '1.5rem',padding: '1rem',background: '#1a1a1a',borderRadius: '10px',border: '1px solid #2c2c2c'}}>
             <textarea
@@ -221,7 +231,7 @@ const SnippetView: React.FC = () => {
                       {comment.user_id === loggedUserId && (
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                           <button
-                            onClick={() => handleUpdateComment()}
+                            onClick={() => handleUpdateComment(comment)}
                             style={{background: '#2d6cdf',border: 'none',color: '#fff',padding: '0.3rem 0.6rem',borderRadius: '6px',cursor: 'pointer',fontSize: '0.75rem'}}
                           >
                             Editar
