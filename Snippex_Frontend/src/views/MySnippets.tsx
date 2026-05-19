@@ -27,7 +27,7 @@ const MySnippets: React.FC = () => {
     fetchSnippets();
   }, []);
 
-  const handleDelete = async (e: React.MouseEvent, id: string | undefined) => {
+  const handleDelete = async (e: React.MouseEvent, id: string | undefined | null) => {
     e.stopPropagation();
     if (!id) return;
     const isConfirmed = window.confirm("Tem a certeza que deseja eliminar este snippet?");
@@ -41,7 +41,7 @@ const MySnippets: React.FC = () => {
     }
   };
 
-  const handleEdit = (e: React.MouseEvent, id: string | undefined) => {
+  const handleEdit = (e: React.MouseEvent, id: string | undefined | null) => {
     e.stopPropagation();
     if (!id) return;
     navigate(`/edit/${id}`);
