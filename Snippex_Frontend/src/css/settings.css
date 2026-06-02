@@ -1,0 +1,255 @@
+/* ==========================================================================
+   SETTINGS PAGE (Tema Snippex Adaptado)
+   ========================================================================== */
+
+.settings-page {
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+  /* Libera a rolagem vertical que o body travou, caso a página cresça */
+  overflow-y: auto; 
+  background-color: var(--color-bg);
+  padding-bottom: var(--space-2xl);
+}
+
+.settings-container {
+  width: min(800px, 92%);
+  margin: var(--space-2xl) auto;
+}
+
+.settings-header {
+  margin-bottom: var(--space-xl);
+}
+
+.settings-title {
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: var(--space-sm);
+  font-family: var(--font-sans);
+}
+
+.settings-subtitle {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+/* ===========================
+   PROFILE CARD
+=========================== */
+
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.profile-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Mudado para o gradiente com o verde Snippex */
+  background: linear-gradient(135deg, var(--color-accent), #10b981);
+  color: var(--color-bg);
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.profile-info h2 {
+  color: var(--color-text);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: var(--space-xs);
+}
+
+.profile-info p {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+}
+
+/* ===========================
+   SECTION CARD
+=========================== */
+
+.settings-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-lg);
+}
+
+.settings-card h3 {
+  color: var(--color-text);
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-sm);
+}
+
+/* ===========================
+   FORM & INPUTS
+=========================== */
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.settings-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-field label {
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-sm);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Forçando o estilo já que o global resetou o input */
+.settings-field input {
+  height: 48px;
+  padding: 0 var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: 0.95rem;
+  transition: var(--transition);
+}
+
+.settings-field input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-border-focus);
+}
+
+/* ===========================
+   CHECKBOX & PREFERENCES
+=========================== */
+
+.preference-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.preference-item:last-of-type {
+  border-bottom: none;
+  margin-bottom: var(--space-sm);
+}
+
+.preference-item label {
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.preference-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+/* ===========================
+   BUTTONS
+=========================== */
+
+.settings-button {
+  align-self: flex-start;
+  padding: 0 var(--space-xl);
+  height: 46px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: var(--transition);
+}
+
+.settings-button.primary {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.settings-button.primary:hover {
+  background: var(--color-accent-hover);
+  transform: translateY(-1px);
+}
+
+.settings-button.danger {
+  background: rgba(ef, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.settings-button.danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+/* ===========================
+   DANGER ZONE
+=========================== */
+
+.settings-card.danger-zone {
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.settings-card.danger-zone h3 {
+  color: #f87171;
+  border-bottom-color: rgba(239, 68, 68, 0.1);
+}
+
+.settings-card.danger-zone p {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: var(--space-md);
+}
+
+/* ===========================
+   RESPONSIVE
+=========================== */
+
+@media (max-width: 768px) {
+  .settings-row {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-card {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--space-md);
+  }
+
+  .settings-card {
+    padding: var(--space-lg);
+  }
+  
+  .settings-button {
+    width: 100%; /* Botão vira bloco no mobile para facilitar o clique */
+  }
+}

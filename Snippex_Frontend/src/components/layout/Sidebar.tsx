@@ -39,6 +39,9 @@ const Sidebar: React.FC = () => {
           <Link to="/new" className={`nav-item ${location.pathname === '/new' ? 'active' : ''}`}>
             ➕ Novo Snippet
           </Link>
+          <Link to="/settings" className={`nav-item ${location.pathname === '/settings' ? 'active' : ''}`}>
+            🧰 Configurações
+          </Link>
         </nav>
       </div>
 

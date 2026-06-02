@@ -6,6 +6,7 @@ import Dashboard from "./views/Dashboard";
 import MySnippets from "./views/MySnippets"; 
 import AppLayout from "./components/layout/AppLayout";
 import SnippetView from "./views/SnippetView";
+import UserConfig from "./views/UserConfig";
 
 import "./App.css";
 
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="/new" element={<SnippexForm />} />
           <Route path="/edit/:id" element={<SnippexForm />} />
           <Route path="/snippet/:id" element={<SnippetView />} />
+          <Route path="/settings" element={<UserConfig />} />
         </Route>
       </Routes>
     </BrowserRouter>
