@@ -23,8 +23,10 @@ export default function Register() {
     return;
   }
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   try {
-    await axios.post("http://localhost:3000/api/users/register", {
+    await axios.post(`${API_URL}/api/users/register`, {
       name: fullName,
       user_name: username,
       email,
