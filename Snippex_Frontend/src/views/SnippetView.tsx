@@ -5,7 +5,7 @@ import { commentService } from '../services/commentService';
 import type { CreateCommentInput } from '../services/commentService';
 import type { Snippet } from '../types/snippet';
 import type { Comment } from '../types/comment';
-import EditCommentModal from './EditCommentModal';
+import EditCommentModal from '../components/EditCommentModal';
 
 const SnippetView: React.FC = () => {
   const { id } = useParams<{ id: string }>();

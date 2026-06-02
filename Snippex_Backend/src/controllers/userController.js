@@ -77,7 +77,84 @@
     }
   }
 
+  async function editProfile(req, res) {
+    try {
+      const { name, user_name, email } = req.body
+      const userId = req.user.id // vindo do middleware JWT
+
+      if (!name || !user_name || !email) {
+        return res.status(400).json({
+          error: 'Preencha todos os campos'
+        })
+      }
+
+      const userExists = await userRepository.findUserByEmail(email)
+
+      if (userExists && userExists.id !== userId) {
+        return res.status(400).json({
+          error: 'E-mail já está em uso'
+        })
+      }
+
+      await userRepository.editProfile({
+        id: userId,
+        name,
+        user_name,
+        email
+      })
+
+      return res.status(200).json({
+        message: 'Perfil atualizado com sucesso'
+      })
+    } catch (error) {
+      console.error(error)
+      return res.status(500).json({
+        error: 'Erro ao atualizar perfil'
+      })
+    }
+  }
+
+  async function changePassword(req, res) {
+    try {
+      const { password } = req.body
+      const userId = req.user.id // vindo do middleware JWT
+
+      if (!password) {
+        return res.status(400).json({
+          error: 'Senha é obrigatória'
+        })
+      }
+
+      // verifica se o usuário existe
+      const currentUser = await userRepository.findUserById(userId)
+
+      if (!currentUser) {
+        return res.status(404).json({
+          error: 'Usuário não encontrado'
+        })
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10)
+
+      await userRepository.changePassword({
+        id: userId,
+        password: hashedPassword
+      })
+
+      return res.status(200).json({
+        message: 'Senha atualizada com sucesso'
+      })
+    } catch (error) {
+      console.error(error)
+      return res.status(500).json({
+        error: 'Erro ao atualizar senha'
+      })
+    }
+  }
+
   module.exports = {
     register,
-    login
+    login,
+    editProfile,
+    changePassword
   }
