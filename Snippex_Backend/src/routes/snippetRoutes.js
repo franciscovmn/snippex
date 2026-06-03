@@ -27,6 +27,9 @@ router.get('/:id', optionalAuth, snippetController.getOne)
 // Criar snippet — POST /api/snippets
 router.post('/', authenticate, snippetController.create)
 
+// Redisparar análise da IA (tentar novamente) — POST /api/snippets/:id/enrich
+router.post('/:id/enrich', authenticate, snippetController.reenrich)
+
 // Atualizar snippet — PATCH /api/snippets/:id
 router.patch('/:id', authenticate, snippetController.update)
 

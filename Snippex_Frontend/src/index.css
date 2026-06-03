@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+/* Base global — GitHub Dark. Variáveis em styles/tokens.css */
 
 *,
 *::before,
@@ -8,54 +8,14 @@
   padding: 0;
 }
 
-:root {
-  /* ── Cores principais ── */
-  --color-bg:           #0a0a0a;
-  --color-surface:      #111111;
-  --color-surface-2:    #1c1c1c;
-  --color-border:       #252525;
-  --color-border-focus: rgba(61, 255, 154, 0.3);
-
-  /* ── Texto ── */
-  --color-text:         #f0f0f0;
-  --color-text-muted:   #888888;
-  --color-text-subtle:  #444444;
-
-  /* ── Acento verde Snippex ── */
-  --color-accent:       #3dff9a;
-  --color-accent-dim:   rgba(61, 255, 154, 0.12);
-  --color-accent-hover: #2de084;
-
-  /* ── Código de fundo ── */
-  --color-code-fg:      rgba(61, 255, 154, 0.13);
-
-  /* ── Tipografia ── */
-  --font-sans: 'Space Grotesk', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-
-  /* ── Espaçamentos ── */
-  --space-xs:  0.25rem;
-  --space-sm:  0.5rem;
-  --space-md:  1rem;
-  --space-lg:  1.5rem;
-  --space-xl:  2rem;
-  --space-2xl: 3rem;
-
-  /* ── Raios ── */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-
-  /* ── Transições ── */
-  --transition: 0.18s ease;
-}
-
 html,
 body {
   height: 100%;
-  background-color: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-sans);
+  background-color: var(--color-bg-canvas);
+  color: var(--color-text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+  line-height: var(--leading);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
@@ -66,8 +26,11 @@ body {
 }
 
 a {
-  color: inherit;
+  color: var(--color-accent-primary);
   text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
 }
 
 button {
@@ -75,9 +38,12 @@ button {
   font-family: inherit;
   border: none;
   background: none;
+  color: inherit;
 }
 
-input {
+input,
+textarea,
+select {
   font-family: inherit;
 }
 
@@ -85,30 +51,36 @@ abbr {
   text-decoration: none;
 }
 
-
-
-/* Ajuste específico para alinhar os cards da imagem */
-.visibility-options {
-  display: grid;
-  /* Força 3 colunas iguais sempre que houver espaço */
-  grid-template-columns: repeat(3, 1fr); 
-  gap: 12px;
-  margin-top: 10px;
+/* Foco visível e acessível em todo o app */
+:focus-visible {
+  outline: 2px solid var(--color-accent-primary);
+  outline-offset: 1px;
+  border-radius: var(--radius-sm);
 }
 
-.vis-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 12px; /* Reduzi um pouco para caber melhor em telas menores */
-  cursor: pointer;
-  transition: var(--transition);
-  display: flex;
-  flex-direction: column;
-  min-height: 85px; /* Garante que todos tenham a mesma altura */
-}
-
-.vis-card.selected {
-  border-color: var(--color-accent);
-  background: var(--color-accent-dim);
+/* ==========================================================================
+   Camada de compatibilidade: mapeia os nomes de variáveis antigos para os
+   novos tokens, para telas ainda não redesenhadas (Login/Register/form.css)
+   herdarem a paleta GitHub sem retrabalho.
+   ========================================================================== */
+:root {
+  --color-bg: var(--color-bg-canvas);
+  --color-surface: var(--color-bg-surface);
+  --color-surface-2: var(--color-bg-overlay);
+  --color-border: var(--color-border-default);
+  --color-border-focus: var(--color-accent-subtle);
+  --color-text: var(--color-text-primary);
+  --color-text-muted: var(--color-text-secondary);
+  --color-text-subtle: var(--color-text-muted);
+  --color-accent: var(--color-accent-success);
+  --color-accent-dim: var(--color-success-subtle);
+  --color-accent-hover: var(--color-success-hover);
+  --font-sans: var(--font-ui);
+  --radius-lg: 8px;
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
 }

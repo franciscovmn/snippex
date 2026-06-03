@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { Search, Plus } from 'lucide-react';
+import Button from '../ui/Button';
 
 const TopBar: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -7,29 +9,26 @@ const TopBar: React.FC = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchTerm.trim()) {
-      navigate(`/dashboard?search=${encodeURIComponent(searchTerm)}`);
-    } else {
-      navigate(`/dashboard`);
-    }
+    navigate(searchTerm.trim() ? `/dashboard?search=${encodeURIComponent(searchTerm)}` : '/dashboard');
   };
 
   return (
     <header className="topbar">
-      <form className="search-container" onSubmit={handleSearch}>
-        <input 
-          type="text" 
-          placeholder="Pesquisar snippets..." 
-          className="search-input" 
+      <form className="topbar-search" onSubmit={handleSearch} role="search">
+        <Search size={16} />
+        <input
+          type="text"
+          placeholder="Pesquisar snippets..."
+          aria-label="Pesquisar snippets"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </form>
-      
+
       <div className="topbar-actions">
-        <Link to="/new" className="btn-new" style={{ padding: '0.5rem 1rem', textDecoration: 'none', borderRadius: '4px' }}>
-          + Novo Snippet
-        </Link>
+        <Button variant="primary" size="md" leftIcon={<Plus size={16} />} onClick={() => navigate('/new')}>
+          <span className="btn-label">Novo Snippet</span>
+        </Button>
       </div>
     </header>
   );
