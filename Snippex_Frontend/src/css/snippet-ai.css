@@ -1,0 +1,45 @@
+/* Bloco de análise da IA na tela do snippet (explicação + sugestões) */
+.ai-box {
+  background-color: #0f1715;
+  border: 1px solid #10b98133;
+  padding: 15px;
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  margin: 16px 0;
+}
+.ai-emoji { font-size: 1.2rem; }
+.ai-text { flex: 1; }
+.ai-text strong { font-size: 0.9rem; display: block; margin-bottom: 6px; }
+.ai-generating { font-size: 0.85rem; color: #3dff9a; margin: 0 0 10px; }
+
+/* Skeleton com shimmer enquanto a IA gera */
+.ai-skeleton-line {
+  height: 12px;
+  border-radius: 6px;
+  margin: 8px 0;
+  background: linear-gradient(90deg, #1c1c1c 25%, #2a2a2a 37%, #1c1c1c 63%);
+  background-size: 400% 100%;
+  animation: ai-shimmer 1.4s ease infinite;
+}
+.ai-skeleton-line.short { width: 60%; }
+
+@keyframes ai-shimmer {
+  0%   { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+/* Lista de sugestões */
+.ai-suggestions { margin: 8px 0 0; padding-left: 1.2rem; }
+.ai-suggestions li { margin-bottom: 6px; line-height: 1.4; font-size: 0.9rem; }
+
+/* Avisos / erro */
+.ai-warning { font-size: 0.8rem; color: #e0b341; margin-top: 10px; }
+.ai-error p { font-size: 0.85rem; color: #e0b341; margin: 0 0 10px; }
+
+.btn-retry {
+  background: #3dff9a; color: #000; border: none;
+  padding: 8px 16px; border-radius: 6px; font-weight: 600;
+  cursor: pointer; font-size: 0.82rem;
+}
+.btn-retry:disabled { opacity: 0.6; cursor: default; }

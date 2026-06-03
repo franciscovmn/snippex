@@ -1,11 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Sparkles, Lightbulb, Loader, RotateCcw, ArrowLeft,
+  Globe, Lock, Users, MessageSquare, Pencil, Trash2,
+} from 'lucide-react';
 import { snippetService } from '../services/snippetService';
 import { commentService } from '../services/commentService';
 import type { CreateCommentInput } from '../services/commentService';
 import type { Snippet } from '../types/snippet';
 import type { Comment } from '../types/comment';
 import EditCommentModal from '../components/EditCommentModal';
+import { supabase } from '../lib/supabaseClient';
+import CodeBlock from '../components/CodeBlock';
+import LanguageBadge from '../components/ui/LanguageBadge';
+import Avatar from '../components/ui/Avatar';
+import Button from '../components/ui/Button';
+import Skeleton from '../components/ui/Skeleton';
+import ConfirmModal from '../components/ui/ConfirmModal';
+import { timeAgo } from '../lib/timeAgo';
+import '../css/snippet-view.css';
 
 const SnippetView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -16,21 +29,24 @@ const SnippetView: React.FC = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [editingComment, setEditingComment] = useState<Comment | null>(null);
+  const [retrying, setRetrying] = useState(false);
+  const [slow, setSlow] = useState(false);
+  const [confirmRegen, setConfirmRegen] = useState(false);
+  const autoEnrichRef = useRef(false);
 
-  const loadComments = async () => { 
+  const loadComments = async () => {
     try {
       if (id) {
-        const comments = await commentService.getBySnippetId(id);
-        console.log(comments);
-        setComments(comments);
+        const data = await commentService.getBySnippetId(id);
+        setComments(data);
       }
     } catch (err) {
-        console.error(err);
-        setError('Não foi possível carregar os comentários');
+      console.error(err);
+      setError('Não foi possível carregar os comentários');
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
     const loadSnippet = async () => {
@@ -50,55 +66,97 @@ const SnippetView: React.FC = () => {
     loadSnippet();
   }, [id]);
 
-  const handleAddComment = async (comment:string) => {
-    console.log(comment);
+  // Realtime: escuta UPDATEs daquela linha; quando a IA preenche explanation/
+  // suggestions, o estado local é atualizado e o skeleton vira conteúdo real.
+  useEffect(() => {
+    if (!id || !supabase) return;
+    const client = supabase;
 
-    if (!id) {
-      console.error("id não pode ser vazio");
-      return;
-    }
+    const channel = client
+      .channel(`snippet-${id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'snippets', filter: `id=eq.${id}` },
+        (payload) => {
+          setSnippet((prev) => (prev ? { ...prev, ...(payload.new as Partial<Snippet>) } : prev));
+        }
+      )
+      .subscribe();
 
-    let newComment:CreateCommentInput = {
-      snippet_id: id,
-      content: comment
+    return () => {
+      client.removeChannel(channel);
     };
-    
-    await commentService.postComment(newComment);
-    loadComments();
-  }
+  }, [id]);
 
-  const handleUpdateComment = (comment: Comment) => {
-    setEditingComment(comment);
+  const explanationText = snippet?.explanation?.trim() ?? '';
+  const hasExplanation = explanationText.length > 0;
+
+  // Aviso se a análise demorar mais que ~60s sem chegar explanation.
+  useEffect(() => {
+    setSlow(false);
+    if (!snippet || hasExplanation) return;
+    const timer = setTimeout(() => setSlow(true), 60000);
+    return () => clearTimeout(timer);
+  }, [snippet?.id, hasExplanation]);
+
+  // Rede de proteção: snippets antigos (criados antes da integração n8n) nunca
+  // tiveram o webhook disparado. Se a explicação está vazia E o usuário logado é
+  // o DONO, dispara /enrich uma única vez por mount. Visitantes não disparam
+  // (não devem consumir tokens de IA de snippet alheio).
+  useEffect(() => {
+    if (!id || !snippet || hasExplanation || autoEnrichRef.current) return;
+    const stored = localStorage.getItem('user');
+    const uid = stored ? JSON.parse(stored).id : null;
+    const owner = uid != null && String(uid) === String(snippet.user_id);
+    if (!owner) return;
+    autoEnrichRef.current = true;
+    snippetService.reenrichSnippet(id).catch((err) => console.error('Auto-enrich falhou:', err));
+  }, [id, snippet, hasExplanation]);
+
+  const handleRetry = async () => {
+    if (!id) return;
+    setConfirmRegen(false);
+    try {
+      setRetrying(true);
+      setSlow(false);
+      setSnippet((prev) => (prev ? { ...prev, explanation: null, suggestions: [] } : prev));
+      await snippetService.reenrichSnippet(id);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setRetrying(false);
+    }
   };
 
-  const handleDeleteComment = async(id:string) =>  {
-    if (!id) {
-      console.error("id não pode ser vazio");
-      return;
-    }
-
-    console.log(id);
-
-    if (!window.confirm("Deseja mesmo excluir o comentário")) return;
-    await commentService.deleteComment(id);
-
+  const handleAddComment = async (comment: string) => {
+    if (!id || !comment.trim()) return;
+    const payload: CreateCommentInput = { snippet_id: id, content: comment };
+    await commentService.postComment(payload);
+    setNewComment('');
     loadComments();
-  }
+  };
 
-  //isso vai ser usado no comentario
-  const userStorage = localStorage.getItem("user");
-  let loggedUserId:string
+  const handleDeleteComment = async (commentId: string) => {
+    if (!commentId) return;
+    if (!window.confirm('Deseja mesmo excluir o comentário?')) return;
+    await commentService.deleteComment(commentId);
+    loadComments();
+  };
 
-  if(userStorage) {
-    loggedUserId = JSON.parse(userStorage).id;
-  }
+  const userStorage = localStorage.getItem('user');
+  let loggedUserId = '';
+  if (userStorage) loggedUserId = JSON.parse(userStorage).id;
 
   if (isLoading) {
     return (
       <main className="main-content">
-        <section className="content-area">
-          <p>A carregar snippet...</p>
-        </section>
+        <div className="snippet-detail">
+          <Skeleton width="40%" height={28} />
+          <div style={{ marginTop: 20 }} className="detail-grid">
+            <Skeleton height={320} />
+            <Skeleton height={200} />
+          </div>
+        </div>
       </main>
     );
   }
@@ -106,61 +164,149 @@ const SnippetView: React.FC = () => {
   if (error || !snippet) {
     return (
       <main className="main-content">
-        <section className="content-area">
-          <p>{error || 'Snippet não encontrado.'}</p>
-          <button className="btn-primary" onClick={() => navigate(-1)}>Voltar</button>
-        </section>
+        <div className="snippet-detail">
+          <p className="ai-muted">{error || 'Snippet não encontrado.'}</p>
+          <Button variant="secondary" leftIcon={<ArrowLeft size={16} />} onClick={() => navigate(-1)} style={{ marginTop: 12 }}>
+            Voltar
+          </Button>
+        </div>
       </main>
     );
   }
 
+  const isFallback = hasExplanation && explanationText.startsWith('Falha ao gerar explicação');
+  const isGenerating = !hasExplanation;
+  const isOwner = !!loggedUserId && String(snippet.user_id) === String(loggedUserId);
+  const author = (snippet as unknown as { user_name?: string }).user_name;
+
+  const VisIcon = snippet.visibility === 'PRIVATE' ? Lock : snippet.visibility === 'TEAM' ? Users : Globe;
+  const visLabel = snippet.visibility === 'PRIVATE' ? 'Privado' : snippet.visibility === 'TEAM' ? 'Time' : 'Público';
+
   return (
     <main className="main-content">
-      <div className="content-header">
-        <h1>{snippet.title}</h1>
-        <button className="btn-ghost" onClick={() => navigate(-1)}>Voltar</button>
-      </div>
-
-      <section className="content-area">
-        <div className="snippet-detail-header" style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <span className="author">por {(snippet as any).user_name || "Anônimo"}</span>
-          <span className="language">{snippet.language}</span>
-          <span className="type-label">{snippet.type === 'code' ? '💻' : '🤖'} {snippet.type}</span>
-          <span className={`badge-visibility ${snippet.visibility?.toLowerCase()}`}>
-              {snippet.visibility === 'PUBLIC' && '🌐 Público'}
-              {snippet.visibility === 'PRIVATE' && '🔒 Privado'}
-              {snippet.visibility === 'TEAM' && '👥 Time'}
-          </span>
+      <div className="snippet-detail">
+        <div className="detail-back">
+          <Button variant="ghost" size="sm" leftIcon={<ArrowLeft size={16} />} onClick={() => navigate(-1)}>
+            Voltar
+          </Button>
         </div>
 
-        {snippet.tags && snippet.tags.length > 0 && (
-          <div className="tags" style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
-            {snippet.tags.map(tag => (
-              <span key={tag} style={{ background: '#f0f0f0', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.85rem' }}>
-                #{tag}
-              </span>
-            ))}
+        {/* Header */}
+        <div className="detail-header">
+          <h1>{snippet.title}</h1>
+          <div className="detail-meta">
+            {author && (
+              <>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Avatar name={author} size={18} /> {author}
+                </span>
+                <span className="sep">•</span>
+              </>
+            )}
+            <LanguageBadge language={snippet.language} />
+            <span className="sep">•</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <VisIcon size={13} /> {visLabel}
+            </span>
+            {snippet.created_at && (
+              <>
+                <span className="sep">•</span>
+                <span>{timeAgo(snippet.created_at)}</span>
+              </>
+            )}
           </div>
-        )}
-
-        <div className="code-container" style={{ background: '#1e1e1e', color: '#d4d4d4', padding: '1rem', borderRadius: '8px', overflowX: 'auto' }}>
-          <pre>
-            <code>{snippet.code}</code>
-          </pre>
         </div>
 
-        {snippet.explanation && (
-          <div className="ai-box" style={{ marginTop: '2rem' }}>
-            <span className="ai-emoji">✨</span>
-            <div className="ai-text">
-              <strong>Explicação da IA</strong>
-              <p style={{ whiteSpace: 'pre-wrap' }}>{snippet.explanation}</p>
+        {/* 2 colunas: código | análise */}
+        <div className="detail-grid">
+          <div className="detail-main">
+            <CodeBlock code={snippet.code} language={snippet.language} />
+          </div>
+
+          <aside className="detail-aside">
+            {/* Explicação */}
+            <div className="card">
+              <div className="ai-card-header">
+                <span className="ai-card-title"><Sparkles size={16} /> Explicação</span>
+                {!isGenerating && isOwner && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    leftIcon={<RotateCcw size={14} />}
+                    onClick={() => setConfirmRegen(true)}
+                    disabled={retrying}
+                  >
+                    Regenerar análise
+                  </Button>
+                )}
+              </div>
+
+              {isFallback ? (
+                <div>
+                  <p className="ai-error-msg">
+                    {isOwner
+                      ? 'Não foi possível gerar a análise desta vez.'
+                      : 'Não foi possível gerar a análise. Peça ao autor para reenviar.'}
+                  </p>
+                  {isOwner && (
+                    <Button variant="primary" size="sm" leftIcon={<RotateCcw size={14} />} onClick={() => setConfirmRegen(true)} disabled={retrying}>
+                      {retrying ? 'Tentando...' : 'Tentar novamente'}
+                    </Button>
+                  )}
+                </div>
+              ) : isGenerating ? (
+                <>
+                  <p className="ai-generating">
+                    <span className="ai-spin"><Loader size={14} /></span> Gerando análise...
+                  </p>
+                  <div className="skeleton-text">
+                    <Skeleton height={12} />
+                    <Skeleton height={12} />
+                    <Skeleton height={12} width="60%" />
+                  </div>
+                  {slow && (
+                    <p className="ai-warning">
+                      {isOwner
+                        ? 'A análise está demorando mais que o esperado. Recarregue em alguns instantes.'
+                        : 'Esta análise ainda não foi gerada. Peça ao autor para reenviar.'}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p className="ai-explanation">{snippet.explanation}</p>
+              )}
             </div>
-          </div>
-        )}
 
-        <div style={{ marginTop: '2rem' }}>
-          <h2 style={{ marginBottom: '1rem' }}>💬 Comentários</h2>
+            {/* Sugestões */}
+            <div className="card">
+              <div className="ai-card-header">
+                <span className="ai-card-title"><Lightbulb size={16} /> Sugestões de melhoria</span>
+              </div>
+
+              {isFallback ? (
+                <p className="ai-muted">Indisponível no momento.</p>
+              ) : isGenerating ? (
+                <div className="skeleton-text">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <Skeleton key={i} height={12} width={i % 2 === 0 ? '100%' : '75%'} />
+                  ))}
+                </div>
+              ) : snippet.suggestions && snippet.suggestions.length > 0 ? (
+                <ul className="ai-suggestions">
+                  {snippet.suggestions.map((s, i) => (
+                    <li key={i}>{s}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="ai-muted">Nenhuma sugestão gerada.</p>
+              )}
+            </div>
+          </aside>
+        </div>
+
+        {/* Comentários (largura total) */}
+        <section className="comments-section">
+          <h2><MessageSquare size={18} /> Comentários</h2>
 
           {editingComment && (
             <EditCommentModal
@@ -171,93 +317,64 @@ const SnippetView: React.FC = () => {
             />
           )}
 
-          {/* ABA DE NOVO COMENTÁRIO */}
-          <div style={{marginBottom: '1.5rem',padding: '1rem',background: '#1a1a1a',borderRadius: '10px',border: '1px solid #2c2c2c'}}>
+          <div className="comment-composer">
             <textarea
+              className="comment-input"
               placeholder="Escreva um comentário..."
+              aria-label="Novo comentário"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              rows={3}
-              style={{width: '100%', resize: 'none', padding: '0.5rem', borderRadius: '6px', border: '1px solid #333', background: '#121212', color: '#fff', marginBottom: '0.5rem'}}
             />
-
-            <button
-              onClick={() => handleAddComment(newComment)}
-              style={{background: '#2ecc71',border: 'none',color: '#fff',padding: '0.4rem 0.8rem',borderRadius: '6px',cursor: 'pointer',fontSize: '0.85rem'}}
-            >
+            <Button variant="primary" size="sm" onClick={() => handleAddComment(newComment)} disabled={!newComment.trim()}>
               Comentar
-            </button>
-          </div> 
-        </div>
+            </Button>
+          </div>
 
-
-
-          <div style={{ marginTop: '2rem' }}>
-            <h3 style={{ marginBottom: '1rem' }}>💬 Comentários da comunidade</h3>
-
-            {comments.length === 0 ? (
-              <p style={{ opacity: 0.6 }}>Nenhum comentário ainda.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {comments.map((comment) => (
-                  <div
-                    key={comment.id}
-                    style={{
-                      background: '#1f1f1f',
-                      padding: '1rem',
-                      borderRadius: '10px',
-                      border: '1px solid #2c2c2c'
-                    }}
-                  >
-                    {/* header */}
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: '0.5rem'
-                      }}
-                    >
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <strong style={{ fontSize: '0.9rem' }}>
-                          {(comment as any).user_name || 'anônimo'}
-                        </strong>
-                        <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>
-                          {new Date(comment.created_at).toLocaleString()}
-                        </span>
-                      </div>
-
-                      {/* botões */}
-                      {comment.user_id === loggedUserId && (
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          <button
-                            onClick={() => handleUpdateComment(comment)}
-                            style={{background: '#2d6cdf',border: 'none',color: '#fff',padding: '0.3rem 0.6rem',borderRadius: '6px',cursor: 'pointer',fontSize: '0.75rem'}}
-                          >
-                            Editar
-                          </button>
-
-                          <button
-                            onClick={() => handleDeleteComment(comment.id)}
-                            style={{background: '#e74c3c',border: 'none',color: '#fff',padding: '0.3rem 0.6rem',borderRadius: '6px',cursor: 'pointer',fontSize: '0.75rem'}}
-                          >
-                            Excluir
-                          </button>
+          <h3>Comentários da comunidade</h3>
+          {comments.length === 0 ? (
+            <p className="ai-muted">Nenhum comentário ainda.</p>
+          ) : (
+            <div className="comment-list">
+              {comments.map((comment) => (
+                <div key={comment.id} className="card comment-item">
+                  <div className="comment-head">
+                    <div className="comment-author">
+                      <Avatar name={(comment as unknown as { user_name?: string }).user_name || 'anônimo'} size={24} />
+                      <div>
+                        <div className="comment-author-name">
+                          {(comment as unknown as { user_name?: string }).user_name || 'anônimo'}
                         </div>
-                      )}
+                        <span className="comment-time">{new Date(comment.created_at).toLocaleString()}</span>
+                      </div>
                     </div>
 
-                    {/* conteúdo */}
-                    <p style={{ margin: 0, lineHeight: 1.4 }}>
-                      {comment.content}
-                    </p>
+                    {comment.user_id === loggedUserId && (
+                      <div className="comment-actions">
+                        <Button size="sm" variant="ghost" leftIcon={<Pencil size={14} />} onClick={() => setEditingComment(comment)}>
+                          Editar
+                        </Button>
+                        <Button size="sm" variant="danger" leftIcon={<Trash2 size={14} />} onClick={() => handleDeleteComment(comment.id)}>
+                          Excluir
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        
-      </section>
+                  <p className="comment-body">{comment.content}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+
+      <ConfirmModal
+        open={confirmRegen}
+        title="Regenerar análise da IA?"
+        message="Isto vai descartar a explicação e as sugestões atuais e gerar uma nova análise. Pode levar alguns segundos."
+        confirmLabel="Regenerar"
+        onConfirm={handleRetry}
+        onCancel={() => setConfirmRegen(false)}
+      />
     </main>
   );
 };

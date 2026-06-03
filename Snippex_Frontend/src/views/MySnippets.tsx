@@ -1,11 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Snippet } from '../types/snippet';
 import { snippetService } from '../services/snippetService';
+import SnippetCard from '../components/SnippetCard';
+
+type VisFilter = 'ALL' | 'PUBLIC' | 'PRIVATE' | 'TEAM';
+
+const FILTERS: { key: VisFilter; label: string }[] = [
+  { key: 'ALL', label: 'Todos' },
+  { key: 'PUBLIC', label: 'Públicos' },
+  { key: 'PRIVATE', label: 'Privados' },
+  { key: 'TEAM', label: 'Time' },
+];
 
 const MySnippets: React.FC = () => {
-  const [userName, setUserName] = useState<string>("");
   const [snippets, setSnippets] = useState<Snippet[]>([]);
+  const [filter, setFilter] = useState<VisFilter>('ALL');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const searchQuery = searchParams.get('search') || '';
@@ -13,15 +23,10 @@ const MySnippets: React.FC = () => {
   useEffect(() => {
     const fetchSnippets = async () => {
       try {
-        let user = localStorage.getItem("user");
-        let username = "Alex Chen";
-        if (user) username = JSON.parse(user).name;
-        
-        setUserName(username);
         const mySnippets: Snippet[] = await snippetService.getMySnippets();
         setSnippets(mySnippets);
       } catch (error) {
-        console.error("Erro a buscar snippets:", error);
+        console.error('Erro a buscar snippets:', error);
       }
     };
     fetchSnippets();
@@ -30,14 +35,12 @@ const MySnippets: React.FC = () => {
   const handleDelete = async (e: React.MouseEvent, id: string | undefined | null) => {
     e.stopPropagation();
     if (!id) return;
-    const isConfirmed = window.confirm("Tem a certeza que deseja eliminar este snippet?");
-    if (!isConfirmed) return;
-
+    if (!window.confirm('Tem a certeza que deseja eliminar este snippet?')) return;
     try {
       await snippetService.deleteSnippet(id);
-      setSnippets(prevSnippets => prevSnippets.filter(snippet => snippet.id !== id));
+      setSnippets((prev) => prev.filter((snippet) => snippet.id !== id));
     } catch (error) {
-      alert("Não foi possível eliminar o snippet.");
+      alert('Não foi possível eliminar o snippet.');
     }
   };
 
@@ -47,66 +50,54 @@ const MySnippets: React.FC = () => {
     navigate(`/edit/${id}`);
   };
 
-  const filteredSnippets = snippets.filter(snippet => {
-    if (!searchQuery) return true;
+  const filteredSnippets = useMemo(() => {
     const lowerQuery = searchQuery.toLowerCase();
-    return (
-      snippet.title.toLowerCase().includes(lowerQuery) ||
-      (snippet.tags && snippet.tags.some(tag => tag.toLowerCase().includes(lowerQuery))) ||
-      snippet.language?.toLowerCase().includes(lowerQuery)
-    );
-  });
+    return snippets.filter((snippet) => {
+      const matchesVis = filter === 'ALL' || snippet.visibility === filter;
+      const matchesSearch =
+        !searchQuery ||
+        snippet.title.toLowerCase().includes(lowerQuery) ||
+        (snippet.tags && snippet.tags.some((tag) => tag.toLowerCase().includes(lowerQuery))) ||
+        snippet.language?.toLowerCase().includes(lowerQuery);
+      return matchesVis && matchesSearch;
+    });
+  }, [snippets, filter, searchQuery]);
 
   return (
     <main className="main-content">
-      <div className="content-header">
-        <h1>Meus Snippets</h1>
-      </div>
+      <div className="page">
+        <div className="page-header">
+          <h1>Meus Snippets</h1>
+          <p className="page-subtitle">
+            {searchQuery ? `Resultados da busca por "${searchQuery}"` : `${snippets.length} snippets criados`}
+          </p>
 
-      <section className="content-area">
-        <h2>Gerenciar Snippets</h2>
-        <p className="subtitle">
-          {searchQuery ? `Resultados da busca por "${searchQuery}" em seus snippets` : `${snippets.length} snippets criados`}
-        </p>
-        <br />
-
-        {filteredSnippets.length === 0 ? (
-          <div className="no-snippets">
-            <p>Nenhum snippet encontrado.</p>
+          <div className="filter-bar">
+            {FILTERS.map(({ key, label }) => (
+              <button key={key} className={`chip ${filter === key ? 'active' : ''}`} onClick={() => setFilter(key)}>
+                {label}
+              </button>
+            ))}
           </div>
-        ) : (
-          filteredSnippets.map((snippet) => (
-            <div 
-              key={snippet.id} 
-              className="snippet-card" 
-              onClick={() => navigate(`/snippet/${snippet.id}`)}
-              style={{ cursor: 'pointer' }}
-            >
-              <div className="card-header">
-                <span className="author">por {userName}</span>
-                <span className="type-label">{snippet.type === 'code' ? '💻' : '🤖'} {snippet.type}</span>
-                <span className="language">{snippet.language}</span>
-              </div>
-              <h3>{snippet.title}</h3>
-              <pre className="code-preview">
-                <code>{snippet.code?.substring(0, 200)}...</code>
-              </pre>
-              <div className="card-footer">
-              <div className="stats">
-                  <span className={`status-icon ${snippet.visibility?.toLowerCase()}`}>
-                    {snippet.visibility === 'PUBLIC' ? '🌐' : snippet.visibility === 'PRIVATE' ? '🔒' : '👥'}
-                    {snippet.visibility}
-                  </span>
-              </div>
-                <div className="snippet-actions">
-                  <button onClick={(e) => handleEdit(e, snippet.id)} className="btn-action btn-edit">✏️ Editar</button>
-                  <button onClick={(e) => handleDelete(e, snippet.id)} className="btn-action btn-delete">🗑️ Eliminar</button>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </section>
+        </div>
+
+        <div className="snippets-grid">
+          {filteredSnippets.length === 0 ? (
+            <div className="empty-state">Nenhum snippet encontrado.</div>
+          ) : (
+            filteredSnippets.map((snippet) => (
+              <SnippetCard
+                key={snippet.id}
+                snippet={snippet}
+                onOpen={() => navigate(`/snippet/${snippet.id}`)}
+                showActions
+                onEdit={(e) => handleEdit(e, snippet.id)}
+                onDelete={(e) => handleDelete(e, snippet.id)}
+              />
+            ))
+          )}
+        </div>
+      </div>
     </main>
   );
 };

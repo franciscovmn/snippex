@@ -38,5 +38,11 @@ export const snippetService = {
     deleteSnippet: async (id: string) => {
         const response = await api.delete(`/api/snippets/${id}`);
         return response.data;
+    },
+
+    // Redispara a análise da IA (botão "tentar novamente" quando falha)
+    reenrichSnippet: async (id: string) => {
+        const response = await api.post(`/api/snippets/${id}/enrich`);
+        return response.data;
     }
 }

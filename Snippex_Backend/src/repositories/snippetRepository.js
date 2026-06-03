@@ -179,6 +179,26 @@ async function saveExplanation(id, explanation) {
   return rows[0] ?? null
 }
 
+/**
+ * Zera a explicação (e as sugestões) de um snippet do próprio usuário.
+ * Usado no "tentar novamente": como o workflow do n8n é idempotente, é preciso
+ * limpar explanation antes de redisparar para forçar a regeneração.
+ * Retorna a linha completa (para montar o payload do webhook) ou null.
+ */
+async function resetExplanation(id, userId) {
+  const query = `
+    UPDATE snippets
+    SET explanation = NULL,
+        suggestions = '{}'
+    WHERE id = $1
+      AND user_id = $2
+      AND deleted_at IS NULL
+    RETURNING *
+  `
+  const { rows } = await pool.query(query, [id, userId])
+  return rows[0] ?? null
+}
+
 // ─────────────────────────────────────────────
 // DELETE (soft delete)
 // ─────────────────────────────────────────────
@@ -209,5 +229,6 @@ module.exports = {
   getSnippetsByTag,
   updateSnippet,
   saveExplanation,
+  resetExplanation,
   deleteSnippet,
 }

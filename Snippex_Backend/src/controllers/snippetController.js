@@ -24,8 +24,8 @@ async function create(req, res) {
       userId, title, type, language, code, visibility: resolvedVisibility, teamId, tags, suggestions,
     })
 
-    // Dispara geração da explicação IA em background (sem await — não bloqueia a resposta)
-    generateExplanationInBackground(snippet.id, snippet.code)
+    // Dispara o enriquecimento por IA (n8n) em background — sem await, não bloqueia a resposta
+    triggerN8nEnrichment(snippet)
 
     return res.status(201).json(snippet)
   } catch (err) {
@@ -131,7 +131,7 @@ async function update(req, res) {
     }
 
     // Regenera explicação IA só se o código foi alterado
-    if (code) generateExplanationInBackground(updated.id, updated.code)
+    if (code) triggerN8nEnrichment(updated)
 
     return res.json(updated)
   } catch (err) {
@@ -162,21 +162,58 @@ async function remove(req, res) {
 }
 
 // ─────────────────────────────────────────────
-// Helper: gera explicação IA em background
+// POST /snippets/:id/enrich  — redispara a análise da IA
 // ─────────────────────────────────────────────
-async function generateExplanationInBackground(snippetId, code) {
+async function reenrich(req, res) {
   try {
-    // TODO: substituir pela chamada real à sua IA (OpenAI, Claude API, etc.)
-    // Exemplo de estrutura:
-    //
-    // const explanation = await aiService.explain(code)
-    // await repo.saveExplanation(snippetId, explanation)
+    const { id } = req.params
+    const userId = req.user.id
 
-    console.log(`[AI] Gerando explicação para snippet ${snippetId}...`)
+    // Limpa explanation primeiro: o workflow do n8n é idempotente e pularia
+    // se já houvesse explicação (mesmo a de fallback). Zerar garante a regeneração.
+    const snippet = await repo.resetExplanation(id, userId)
+
+    if (!snippet) {
+      return res.status(404).json({ error: 'Snippet não encontrado ou sem permissão.' })
+    }
+
+    triggerN8nEnrichment(snippet)
+
+    return res.status(202).json({ status: 'enrichment_triggered' })
   } catch (err) {
-    console.error(`[AI] Falha ao gerar explicação para ${snippetId}:`, err)
-    // Não propaga o erro — não deve quebrar o fluxo principal
+    console.error('[reenrich snippet]', err)
+    return res.status(500).json({ error: 'Erro ao redisparar a análise.' })
   }
 }
 
-module.exports = { create, listPublic, listMine, getOne, listByTag, update, remove }
+// ─────────────────────────────────────────────
+// Helper: dispara o webhook do n8n (fire-and-forget)
+// Gera explicação + sugestões via IA e atualiza a linha no Supabase.
+// ─────────────────────────────────────────────
+function triggerN8nEnrichment(snippet) {
+  // Proteção de redundância: só dispara se ainda não houver explicação.
+  // (O workflow já é idempotente, mas isso evita uma chamada desnecessária.)
+  if (snippet.explanation && String(snippet.explanation).trim() !== '') return
+
+  const webhookUrl = process.env.N8N_WEBHOOK_SNIPPEX_ENRICH
+  if (!webhookUrl) {
+    console.error('[n8n] N8N_WEBHOOK_SNIPPEX_ENRICH não configurada; enriquecimento IA ignorado.')
+    return
+  }
+
+  // Sem await no chamador: erros só são logados e nunca quebram a UX.
+  fetch(webhookUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      id: snippet.id,
+      type: snippet.type,
+      code: snippet.code,
+      language: snippet.language,
+    }),
+  }).catch((err) => {
+    console.error(`[n8n] Falha ao disparar webhook para snippet ${snippet.id}:`, err.message)
+  })
+}
+
+module.exports = { create, listPublic, listMine, getOne, listByTag, update, remove, reenrich }
