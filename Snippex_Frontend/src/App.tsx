@@ -4,6 +4,7 @@ import Register from "./views/Register";
 import SnippexForm from "./views/snippet-form";
 import Dashboard from "./views/Dashboard";
 import MySnippets from "./views/MySnippets"; 
+import SavedSnippets from "./views/SavedSnippets";
 import AppLayout from "./components/layout/AppLayout";
 import SnippetView from "./views/SnippetView";
 import UserConfig from "./views/UserConfig";
@@ -22,6 +23,7 @@ export default function App() {
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/my-snippets" element={<MySnippets />} />
+          <Route path="/saved" element={<SavedSnippets />} />
           <Route path="/new" element={<SnippexForm />} />
           <Route path="/edit/:id" element={<SnippexForm />} />
           <Route path="/snippet/:id" element={<SnippetView />} />

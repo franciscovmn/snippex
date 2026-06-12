@@ -21,6 +21,7 @@ model User {
   updated_at DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
 
   snippets  Snippet[]
+  saved_snippets SavedSnippet[]
 
   @@map("users")
 }
@@ -43,8 +44,24 @@ model Snippet {
   updated_at  DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
   deleted_at  DateTime? @db.Timestamptz(6)
 
+  saved_by    SavedSnippet[]
+
   @@index([user_id])
   @@index([is_public])
   @@index([deleted_at])
   @@map("snippets")
+}
+
+model SavedSnippet {
+  user_id    String   @db.Uuid
+  snippet_id String   @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  snippet Snippet @relation(fields: [snippet_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, snippet_id])
+  @@index([user_id, created_at])
+  @@index([snippet_id])
+  @@map("saved_snippets")
 }

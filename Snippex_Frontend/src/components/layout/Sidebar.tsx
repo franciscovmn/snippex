@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FileCode, Compass, Library, Plus, Settings, LogOut } from 'lucide-react';
+import { FileCode, Compass, Library, Plus, Settings, LogOut, Bookmark } from 'lucide-react';
 import Avatar from '../ui/Avatar';
 
 const NAV = [
   { to: '/dashboard', label: 'Comunidade', icon: Compass },
   { to: '/my-snippets', label: 'Meus Snippets', icon: Library },
+  { to: '/saved', label: 'Salvos', icon: Bookmark },
   { to: '/new', label: 'Novo Snippet', icon: Plus },
   { to: '/settings', label: 'Configurações', icon: Settings },
 ];

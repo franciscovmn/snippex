@@ -44,7 +44,7 @@ function optionalAuth(req, res, next) {
     try {
       const decoded = jwt.verify(token, JWT_SECRET)
 
-      req.user = { id: decoded.sub, email: decoded.email, team_id: decoded.team_id ?? null }
+      req.user = { id: decoded.sub || decoded.id, email: decoded.email, team_id: decoded.team_id ?? null }
     } catch {
       // Token inválido — ignora e continua como anônimo
       req.user = null

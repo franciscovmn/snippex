@@ -25,6 +25,11 @@ export const snippetService = {
         return response.data;
     },
 
+    getSavedSnippets: async () => {
+        const response = await api.get('/api/snippets/saved');
+        return response.data;
+    },
+
     postSnippet: async (snippet:Snippet) => {
         const response = await api.post('/api/snippets/', snippet);
         return response.data;
@@ -40,9 +45,13 @@ export const snippetService = {
         return response.data;
     },
 
-    // Redispara a análise da IA (botão "tentar novamente" quando falha)
-    reenrichSnippet: async (id: string) => {
-        const response = await api.post(`/api/snippets/${id}/enrich`);
+    saveSnippet: async (id: string) => {
+        const response = await api.post(`/api/snippets/${id}/save`);
+        return response.data;
+    },
+
+    unsaveSnippet: async (id: string) => {
+        const response = await api.delete(`/api/snippets/${id}/save`);
         return response.data;
     }
 }

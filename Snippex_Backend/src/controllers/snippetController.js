@@ -71,6 +71,20 @@ async function listMine(req, res) {
 }
 
 // ─────────────────────────────────────────────
+// GET /snippets/saved (snippets salvos pelo usuário)
+// ─────────────────────────────────────────────
+async function listSaved(req, res) {
+  try {
+    const userId = req.user.id
+    const snippets = await repo.getSavedSnippetsByUser(userId)
+    return res.json(snippets)
+  } catch (err) {
+    console.error('[listSaved snippets]', err)
+    return res.status(500).json({ error: 'Erro ao buscar snippets salvos.' })
+  }
+}
+
+// ─────────────────────────────────────────────
 // GET /snippets/:id
 // ─────────────────────────────────────────────
 async function getOne(req, res) {
@@ -130,8 +144,8 @@ async function update(req, res) {
       return res.status(404).json({ error: 'Snippet não encontrado ou sem permissão.' })
     }
 
-    // Regenera explicação IA só se o código foi alterado
-    if (code) triggerN8nEnrichment(updated)
+    // Regenera explicação IA só se o código realmente foi alterado.
+    if (updated.code_changed) triggerN8nEnrichment(updated)
 
     return res.json(updated)
   } catch (err) {
@@ -162,27 +176,40 @@ async function remove(req, res) {
 }
 
 // ─────────────────────────────────────────────
-// POST /snippets/:id/enrich  — redispara a análise da IA
+// POST /snippets/:id/save
 // ─────────────────────────────────────────────
-async function reenrich(req, res) {
+async function save(req, res) {
   try {
     const { id } = req.params
     const userId = req.user.id
 
-    // Limpa explanation primeiro: o workflow do n8n é idempotente e pularia
-    // se já houvesse explicação (mesmo a de fallback). Zerar garante a regeneração.
-    const snippet = await repo.resetExplanation(id, userId)
+    const saved = await repo.saveSnippetForUser(userId, id)
 
-    if (!snippet) {
-      return res.status(404).json({ error: 'Snippet não encontrado ou sem permissão.' })
+    if (!saved) {
+      return res.status(404).json({ error: 'Snippet não encontrado ou indisponível para salvar.' })
     }
 
-    triggerN8nEnrichment(snippet)
-
-    return res.status(202).json({ status: 'enrichment_triggered' })
+    return res.status(200).json({ status: 'saved', snippet_id: saved.snippet_id })
   } catch (err) {
-    console.error('[reenrich snippet]', err)
-    return res.status(500).json({ error: 'Erro ao redisparar a análise.' })
+    console.error('[save snippet]', err)
+    return res.status(500).json({ error: 'Erro ao salvar snippet.' })
+  }
+}
+
+// ─────────────────────────────────────────────
+// DELETE /snippets/:id/save
+// ─────────────────────────────────────────────
+async function unsave(req, res) {
+  try {
+    const { id } = req.params
+    const userId = req.user.id
+
+    await repo.unsaveSnippetForUser(userId, id)
+
+    return res.status(204).send()
+  } catch (err) {
+    console.error('[unsave snippet]', err)
+    return res.status(500).json({ error: 'Erro ao remover snippet salvo.' })
   }
 }
 
@@ -216,4 +243,4 @@ function triggerN8nEnrichment(snippet) {
   })
 }
 
-module.exports = { create, listPublic, listMine, getOne, listByTag, update, remove, reenrich }
+module.exports = { create, listPublic, listMine, listSaved, getOne, listByTag, update, remove, save, unsave }

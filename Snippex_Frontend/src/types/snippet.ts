@@ -12,6 +12,8 @@ export interface Snippet {
   explanation: string | null;
   tags: string[] | null;
   suggestions: string[] | null;
+  is_saved?: boolean;
+  saved_at?: string | Date | null;
   created_at: string | Date | null;
   updated_at: string | Date | null;
   deleted_at: string | Date | null;

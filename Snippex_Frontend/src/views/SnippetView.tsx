@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Sparkles, Lightbulb, Loader, RotateCcw, ArrowLeft,
-  Globe, Lock, Users, MessageSquare, Pencil, Trash2,
+  Sparkles, Lightbulb, Loader, ArrowLeft,
+  Globe, Lock, Users, MessageSquare, Pencil, Trash2, Bookmark,
 } from 'lucide-react';
 import { snippetService } from '../services/snippetService';
 import { commentService } from '../services/commentService';
@@ -16,7 +16,6 @@ import LanguageBadge from '../components/ui/LanguageBadge';
 import Avatar from '../components/ui/Avatar';
 import Button from '../components/ui/Button';
 import Skeleton from '../components/ui/Skeleton';
-import ConfirmModal from '../components/ui/ConfirmModal';
 import { timeAgo } from '../lib/timeAgo';
 import '../css/snippet-view.css';
 
@@ -29,10 +28,8 @@ const SnippetView: React.FC = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [editingComment, setEditingComment] = useState<Comment | null>(null);
-  const [retrying, setRetrying] = useState(false);
+  const [savingSnippet, setSavingSnippet] = useState(false);
   const [slow, setSlow] = useState(false);
-  const [confirmRegen, setConfirmRegen] = useState(false);
-  const autoEnrichRef = useRef(false);
 
   const loadComments = async () => {
     try {
@@ -99,35 +96,6 @@ const SnippetView: React.FC = () => {
     return () => clearTimeout(timer);
   }, [snippet?.id, hasExplanation]);
 
-  // Rede de proteção: snippets antigos (criados antes da integração n8n) nunca
-  // tiveram o webhook disparado. Se a explicação está vazia E o usuário logado é
-  // o DONO, dispara /enrich uma única vez por mount. Visitantes não disparam
-  // (não devem consumir tokens de IA de snippet alheio).
-  useEffect(() => {
-    if (!id || !snippet || hasExplanation || autoEnrichRef.current) return;
-    const stored = localStorage.getItem('user');
-    const uid = stored ? JSON.parse(stored).id : null;
-    const owner = uid != null && String(uid) === String(snippet.user_id);
-    if (!owner) return;
-    autoEnrichRef.current = true;
-    snippetService.reenrichSnippet(id).catch((err) => console.error('Auto-enrich falhou:', err));
-  }, [id, snippet, hasExplanation]);
-
-  const handleRetry = async () => {
-    if (!id) return;
-    setConfirmRegen(false);
-    try {
-      setRetrying(true);
-      setSlow(false);
-      setSnippet((prev) => (prev ? { ...prev, explanation: null, suggestions: [] } : prev));
-      await snippetService.reenrichSnippet(id);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setRetrying(false);
-    }
-  };
-
   const handleAddComment = async (comment: string) => {
     if (!id || !comment.trim()) return;
     const payload: CreateCommentInput = { snippet_id: id, content: comment };
@@ -141,6 +109,26 @@ const SnippetView: React.FC = () => {
     if (!window.confirm('Deseja mesmo excluir o comentário?')) return;
     await commentService.deleteComment(commentId);
     loadComments();
+  };
+
+  const handleToggleSave = async () => {
+    if (!id || !snippet || savingSnippet) return;
+
+    try {
+      setSavingSnippet(true);
+      if (snippet.is_saved) {
+        await snippetService.unsaveSnippet(id);
+        setSnippet((prev) => (prev ? { ...prev, is_saved: false } : prev));
+      } else {
+        await snippetService.saveSnippet(id);
+        setSnippet((prev) => (prev ? { ...prev, is_saved: true } : prev));
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Não foi possível atualizar seus salvos.');
+    } finally {
+      setSavingSnippet(false);
+    }
   };
 
   const userStorage = localStorage.getItem('user');
@@ -176,7 +164,6 @@ const SnippetView: React.FC = () => {
 
   const isFallback = hasExplanation && explanationText.startsWith('Falha ao gerar explicação');
   const isGenerating = !hasExplanation;
-  const isOwner = !!loggedUserId && String(snippet.user_id) === String(loggedUserId);
   const author = (snippet as unknown as { user_name?: string }).user_name;
 
   const VisIcon = snippet.visibility === 'PRIVATE' ? Lock : snippet.visibility === 'TEAM' ? Users : Globe;
@@ -189,6 +176,17 @@ const SnippetView: React.FC = () => {
           <Button variant="ghost" size="sm" leftIcon={<ArrowLeft size={16} />} onClick={() => navigate(-1)}>
             Voltar
           </Button>
+          {loggedUserId && (
+            <Button
+              variant={snippet.is_saved ? 'secondary' : 'ghost'}
+              size="sm"
+              leftIcon={<Bookmark size={16} fill={snippet.is_saved ? 'currentColor' : 'none'} />}
+              onClick={handleToggleSave}
+              disabled={savingSnippet}
+            >
+              {snippet.is_saved ? 'Salvo' : 'Salvar'}
+            </Button>
+          )}
         </div>
 
         {/* Header */}
@@ -228,31 +226,11 @@ const SnippetView: React.FC = () => {
             <div className="card">
               <div className="ai-card-header">
                 <span className="ai-card-title"><Sparkles size={16} /> Explicação</span>
-                {!isGenerating && isOwner && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    leftIcon={<RotateCcw size={14} />}
-                    onClick={() => setConfirmRegen(true)}
-                    disabled={retrying}
-                  >
-                    Regenerar análise
-                  </Button>
-                )}
               </div>
 
               {isFallback ? (
                 <div>
-                  <p className="ai-error-msg">
-                    {isOwner
-                      ? 'Não foi possível gerar a análise desta vez.'
-                      : 'Não foi possível gerar a análise. Peça ao autor para reenviar.'}
-                  </p>
-                  {isOwner && (
-                    <Button variant="primary" size="sm" leftIcon={<RotateCcw size={14} />} onClick={() => setConfirmRegen(true)} disabled={retrying}>
-                      {retrying ? 'Tentando...' : 'Tentar novamente'}
-                    </Button>
-                  )}
+                  <p className="ai-error-msg">Não foi possível gerar a análise desta vez.</p>
                 </div>
               ) : isGenerating ? (
                 <>
@@ -266,9 +244,7 @@ const SnippetView: React.FC = () => {
                   </div>
                   {slow && (
                     <p className="ai-warning">
-                      {isOwner
-                        ? 'A análise está demorando mais que o esperado. Recarregue em alguns instantes.'
-                        : 'Esta análise ainda não foi gerada. Peça ao autor para reenviar.'}
+                      A análise está demorando mais que o esperado. Recarregue em alguns instantes.
                     </p>
                   )}
                 </>
@@ -366,15 +342,6 @@ const SnippetView: React.FC = () => {
           )}
         </section>
       </div>
-
-      <ConfirmModal
-        open={confirmRegen}
-        title="Regenerar análise da IA?"
-        message="Isto vai descartar a explicação e as sugestões atuais e gerar uma nova análise. Pode levar alguns segundos."
-        confirmLabel="Regenerar"
-        onConfirm={handleRetry}
-        onCancel={() => setConfirmRegen(false)}
-      />
     </main>
   );
 };
