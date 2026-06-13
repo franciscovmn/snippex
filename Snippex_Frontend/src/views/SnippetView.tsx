@@ -143,6 +143,12 @@ const SnippetView: React.FC = () => {
     loadComments();
   };
 
+  //trecho usado na parte de comentário
+  const userLogged = ():boolean => {
+    const userStorage = localStorage.getItem('user');
+    return userStorage !== null && userStorage !== "";
+  }
+
   const userStorage = localStorage.getItem('user');
   let loggedUserId = '';
   if (userStorage) loggedUserId = JSON.parse(userStorage).id;
@@ -317,18 +323,42 @@ const SnippetView: React.FC = () => {
             />
           )}
 
-          <div className="comment-composer">
-            <textarea
-              className="comment-input"
-              placeholder="Escreva um comentário..."
-              aria-label="Novo comentário"
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-            />
-            <Button variant="primary" size="sm" onClick={() => handleAddComment(newComment)} disabled={!newComment.trim()}>
-              Comentar
-            </Button>
-          </div>
+          {/* Aba de adicionar comentário (disponível só pra usuário logado) */}
+          {
+            userLogged() 
+            ? (
+              <div className="comment-composer">
+                <textarea
+                  className="comment-input"
+                  placeholder="Escreva um comentário..."
+                  aria-label="Novo comentário"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                />
+                <Button variant="primary" size="sm" onClick={() => handleAddComment(newComment)} disabled={!newComment.trim()}>
+                  Comentar
+                </Button>
+              </div> 
+            ) 
+            : ( 
+              <div className="comment-login-card">
+                <div className="comment-login-content">
+                  <h4>Quer participar da conversa?</h4>
+                  <p>Faça login para comentar neste snippet e interagir com a comunidade.</p>
+                </div>
+
+                <br />
+
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => navigate('/login')}
+                >
+                  Fazer login
+                </Button>
+              </div>
+            )
+          }
 
           <h3>Comentários da comunidade</h3>
           {comments.length === 0 ? (

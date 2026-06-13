@@ -7,6 +7,7 @@ import MySnippets from "./views/MySnippets";
 import AppLayout from "./components/layout/AppLayout";
 import SnippetView from "./views/SnippetView";
 import UserConfig from "./views/UserConfig";
+import { PrivateRoute } from "./views/PrivateRoute";
 
 import "./App.css";
 
@@ -21,11 +22,13 @@ export default function App() {
         {/* TODO(Futuro MVP): Separar as rotas internas num componente de roteamento autenticado para maior segurança */}
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/my-snippets" element={<MySnippets />} />
-          <Route path="/new" element={<SnippexForm />} />
-          <Route path="/edit/:id" element={<SnippexForm />} />
           <Route path="/snippet/:id" element={<SnippetView />} />
-          <Route path="/settings" element={<UserConfig />} />
+
+          {/* rotas privadas, o usuário tem que estar logado pra acessar elas */}
+          <Route path="/my-snippets" element={ <PrivateRoute> <MySnippets /> </PrivateRoute>} />
+          <Route path="/new" element={<PrivateRoute> <SnippexForm /> </PrivateRoute>} />
+          <Route path="/edit/:id" element={<PrivateRoute> <SnippexForm /> </PrivateRoute>} />
+          <Route path="/settings" element={<PrivateRoute> <UserConfig /> </PrivateRoute>} />
         </Route>
       </Routes>
     </BrowserRouter>

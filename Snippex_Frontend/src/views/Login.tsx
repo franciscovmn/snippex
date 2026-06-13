@@ -140,10 +140,10 @@ export default function Login() {
             Continue com o GitHub
           </button>
 
-          <br /> <br /> 
+          <br /> 
           
           {/* galera, esse botão aqui serve só pra acessar o Dashboard enquanto ainda não tiver conexão com o banco, a fim de testes */}
-          <Link to="/dashboard" className="btn-github btn--full" type="button"> Entrar como convidado (Teste) </Link>
+          <Link to="/dashboard" className="btn-github btn--full" type="button"> Entrar como visitante </Link>
 
           <p className="auth-footer">
             Não tem conta?{" "}

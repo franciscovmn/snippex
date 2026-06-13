@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, User } from 'lucide-react';
 import Button from '../ui/Button';
 
 const TopBar: React.FC = () => {
@@ -11,6 +11,11 @@ const TopBar: React.FC = () => {
     e.preventDefault();
     navigate(searchTerm.trim() ? `/dashboard?search=${encodeURIComponent(searchTerm)}` : '/dashboard');
   };
+
+  const userLogged = ():boolean => {
+    const userStorage = localStorage.getItem('user');
+    return userStorage !== null && userStorage !== "";
+  }
 
   return (
     <header className="topbar">
@@ -25,11 +30,25 @@ const TopBar: React.FC = () => {
         />
       </form>
 
-      <div className="topbar-actions">
-        <Button variant="primary" size="md" leftIcon={<Plus size={16} />} onClick={() => navigate('/new')}>
-          <span className="btn-label">Novo Snippet</span>
-        </Button>
-      </div>
+      {userLogged() 
+        ? (
+          <div className="topbar-actions">
+            <Button variant="primary" size="md" leftIcon={<Plus size={16} />} onClick={() => navigate('/new')}>
+              <span className="btn-label">Novo Snippet</span>
+            </Button>
+          </div>
+        ) 
+        
+        : (
+          <div className="topbar-actions">
+            <Button
+              variant="primary" size="md" leftIcon={<User size={16} />}  onClick={() => navigate('/login')}
+            >
+              Fazer login
+            </Button>
+          </div>
+        )
+      }
     </header>
   );
 };
