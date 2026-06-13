@@ -20,6 +20,9 @@ router.get('/tag/:tag', snippetController.listByTag)
 // Snippets do usuário logado — GET /api/snippets/me
 router.get('/me', authenticate, snippetController.listMine)
 
+// Snippets salvos pelo usuário — GET /api/snippets/saved
+router.get('/saved', authenticate, snippetController.listSaved)
+
 // Detalhe de um snippet (optionalAuth: se logado, pode ver os próprios privados)
 // GET /api/snippets/:id
 router.get('/:id', optionalAuth, snippetController.getOne)
@@ -27,8 +30,9 @@ router.get('/:id', optionalAuth, snippetController.getOne)
 // Criar snippet — POST /api/snippets
 router.post('/', authenticate, snippetController.create)
 
-// Redisparar análise da IA (tentar novamente) — POST /api/snippets/:id/enrich
-router.post('/:id/enrich', authenticate, snippetController.reenrich)
+// Salvar/remover snippet salvo — POST/DELETE /api/snippets/:id/save
+router.post('/:id/save', authenticate, snippetController.save)
+router.delete('/:id/save', authenticate, snippetController.unsave)
 
 // Atualizar snippet — PATCH /api/snippets/:id
 router.patch('/:id', authenticate, snippetController.update)

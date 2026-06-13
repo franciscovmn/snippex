@@ -1,9 +1,9 @@
 # Segredos / configuração local — NUNCA versionar
 .mcp.json
-.claude/settings.local.json
 .env
 .env.local
 *.key
+*.local.json
 
 # Dependências
 node_modules/
@@ -13,5 +13,3 @@ dist/
 build/
 .DS_Store
 **/.DS_Store
-CLAUDE.md
-.claude/

@@ -5,6 +5,7 @@ const cors = require('cors')
 const snippetRoutes = require('./routes/snippetRoutes')
 const userRoutes = require('./routes/userRoutes')
 const commentRoutes = require('./routes/commentRoutes')
+const { ensureSchema } = require('./config/ensureSchema')
 
 const app  = express()
 const PORT = process.env.PORT || 3000
@@ -22,6 +23,13 @@ app.use('/api/comments', commentRoutes)
 app.get('/health', (req, res) => res.json({ status: 'ok' }))
 
 // ── Start ─────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`)
-})
+ensureSchema()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`🚀 Servidor rodando em http://localhost:${PORT}`)
+    })
+  })
+  .catch((err) => {
+    console.error('❌ Erro ao preparar schema do banco:', err)
+    process.exit(1)
+  })

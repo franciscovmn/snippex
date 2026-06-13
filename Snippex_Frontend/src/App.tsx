@@ -4,6 +4,7 @@ import Register from "./views/Register";
 import SnippexForm from "./views/snippet-form";
 import Dashboard from "./views/Dashboard";
 import MySnippets from "./views/MySnippets"; 
+import SavedSnippets from "./views/SavedSnippets";
 import AppLayout from "./components/layout/AppLayout";
 import SnippetView from "./views/SnippetView";
 import UserConfig from "./views/UserConfig";
@@ -19,16 +20,18 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* TODO(Futuro MVP): Separar as rotas internas num componente de roteamento autenticado para maior segurança */}
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/snippet/:id" element={<SnippetView />} />
 
           {/* rotas privadas, o usuário tem que estar logado pra acessar elas */}
-          <Route path="/my-snippets" element={ <PrivateRoute> <MySnippets /> </PrivateRoute>} />
-          <Route path="/new" element={<PrivateRoute> <SnippexForm /> </PrivateRoute>} />
-          <Route path="/edit/:id" element={<PrivateRoute> <SnippexForm /> </PrivateRoute>} />
-          <Route path="/settings" element={<PrivateRoute> <UserConfig /> </PrivateRoute>} />
+          <Route element={<PrivateRoute />}>
+            <Route path="/my-snippets" element={ <MySnippets />} />
+            <Route path="/new" element={<SnippexForm />} />
+            <Route path="/saved" element={<SavedSnippets /> } />
+            <Route path="/edit/:id" element={<SnippexForm />} />
+            <Route path="/settings" element={<UserConfig />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>

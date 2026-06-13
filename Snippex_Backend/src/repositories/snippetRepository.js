@@ -96,7 +96,19 @@ async function getSnippetsByUser(userId) {
  */
 async function getSnippetById(id, requestingUserId = null, requestingTeamId = null) {
   const query = `
-    SELECT s.*, u.user_name, u.email
+    SELECT
+      s.*,
+      u.user_name,
+      u.email,
+      CASE
+        WHEN $2::uuid IS NULL THEN false
+        ELSE EXISTS (
+          SELECT 1
+          FROM saved_snippets ss
+          WHERE ss.user_id = $2::uuid
+            AND ss.snippet_id = s.id
+        )
+      END AS is_saved
     FROM snippets s
     JOIN users u ON u.id = s.user_id
     WHERE s.id = $1
@@ -108,6 +120,77 @@ async function getSnippetById(id, requestingUserId = null, requestingTeamId = nu
       )
   `
   const { rows } = await pool.query(query, [id, requestingUserId, requestingTeamId])
+  return rows[0] ?? null
+}
+
+async function getSavedSnippetsByUser(userId) {
+  const query = `
+    SELECT
+      s.*,
+      u.user_name,
+      u.email,
+      true AS is_saved,
+      ss.created_at AS saved_at
+    FROM saved_snippets ss
+    JOIN snippets s ON s.id = ss.snippet_id
+    JOIN users u ON u.id = s.user_id
+    WHERE ss.user_id = $1
+      AND s.deleted_at IS NULL
+      AND (
+        s.visibility = 'PUBLIC'
+        OR (s.visibility = 'TEAM' AND s.team_id = (
+          SELECT team_id FROM users WHERE id = $1
+        ))
+        OR (s.visibility = 'PRIVATE' AND s.user_id = $1)
+      )
+    ORDER BY ss.created_at DESC
+  `
+  const { rows } = await pool.query(query, [userId])
+  return rows
+}
+
+async function saveSnippetForUser(userId, snippetId) {
+  const query = `
+    WITH viewer AS (
+      SELECT team_id FROM users WHERE id = $1
+    ),
+    visible_snippet AS (
+      SELECT s.id
+      FROM snippets s, viewer v
+      WHERE s.id = $2
+        AND s.deleted_at IS NULL
+        AND (
+          s.visibility = 'PUBLIC'
+          OR (s.visibility = 'TEAM' AND s.team_id = v.team_id)
+          OR (s.visibility = 'PRIVATE' AND s.user_id = $1)
+        )
+    ),
+    inserted AS (
+      INSERT INTO saved_snippets (user_id, snippet_id)
+      SELECT $1, id FROM visible_snippet
+      ON CONFLICT (user_id, snippet_id) DO NOTHING
+      RETURNING user_id, snippet_id, created_at
+    )
+    SELECT user_id, snippet_id, created_at FROM inserted
+    UNION ALL
+    SELECT ss.user_id, ss.snippet_id, ss.created_at
+    FROM saved_snippets ss
+    WHERE ss.user_id = $1
+      AND ss.snippet_id = $2
+      AND NOT EXISTS (SELECT 1 FROM inserted)
+  `
+  const { rows } = await pool.query(query, [userId, snippetId])
+  return rows[0] ?? null
+}
+
+async function unsaveSnippetForUser(userId, snippetId) {
+  const query = `
+    DELETE FROM saved_snippets
+    WHERE user_id = $1
+      AND snippet_id = $2
+    RETURNING user_id, snippet_id
+  `
+  const { rows } = await pool.query(query, [userId, snippetId])
   return rows[0] ?? null
 }
 
@@ -144,19 +227,32 @@ async function updateSnippet(id, userId, { title, language, code, visibility, ta
   const isPublic = visibility ? visibility === 'PUBLIC' : undefined
 
   const query = `
+    WITH existing AS (
+      SELECT code
+      FROM snippets
+      WHERE id = $1
+        AND user_id = $2
+        AND deleted_at IS NULL
+    ),
+    changed AS (
+      SELECT ($5::text IS NOT NULL AND $5::text IS DISTINCT FROM code) AS code_changed
+      FROM existing
+    )
     UPDATE snippets
     SET
       title       = COALESCE($3, title),
       language    = COALESCE($4, language),
-      code        = COALESCE($5, code),
+      code        = COALESCE($5::text, code),
       visibility  = COALESCE($6, visibility),
       is_public   = COALESCE($7, is_public),
       tags        = COALESCE($8, tags),
-      suggestions = COALESCE($9, suggestions)
+      explanation = CASE WHEN changed.code_changed THEN NULL ELSE explanation END,
+      suggestions = CASE WHEN changed.code_changed THEN '{}' ELSE COALESCE($9, suggestions) END
+    FROM changed
     WHERE id = $1
       AND user_id = $2
       AND deleted_at IS NULL
-    RETURNING *
+    RETURNING snippets.*, changed.code_changed
   `
   const values = [id, userId, title, language, code, visibility ?? null, isPublic ?? null, tags, suggestions]
   const { rows } = await pool.query(query, values)
@@ -226,7 +322,10 @@ module.exports = {
   getVisibleSnippets, // para ter a comunidade com visibilidade
   getSnippetsByUser,
   getSnippetById,
+  getSavedSnippetsByUser,
   getSnippetsByTag,
+  saveSnippetForUser,
+  unsaveSnippetForUser,
   updateSnippet,
   saveExplanation,
   resetExplanation,
