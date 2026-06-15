@@ -7,12 +7,13 @@ const userRoutes = require('./routes/userRoutes')
 const commentRoutes = require('./routes/commentRoutes')
 const yampiRoutes = require('./routes/yampiRoutes')
 const { ensureSchema } = require('./config/ensureSchema')
+const { buildCorsOptions } = require('./config/cors')
 
 const app  = express()
 const PORT = process.env.PORT || 3000
 
 // ── Middlewares globais ───────────────────────
-app.use(cors())
+app.use(cors(buildCorsOptions(process.env.CORS_ORIGIN || '')))
 app.use(express.json({
   verify: (req, _res, buf) => {
     req.rawBody = buf?.length ? buf.toString('utf8') : ''
