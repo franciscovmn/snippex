@@ -29,6 +29,27 @@ function normalizeYampiWebhookPayload(payload) {
   const customerData = resource.customer?.data ?? {}
   const transactions = resource.transactions?.data ?? []
   const statusData = resource.status?.data ?? {}
+  const itemCollections = [
+    resource.items?.data ?? [],
+    resource.products?.data ?? [],
+  ].filter((items) => Array.isArray(items))
+  const itemTexts = itemCollections.flatMap((items) =>
+    items.map((item) => [
+      item?.name,
+      item?.title,
+      item?.product?.name,
+      item?.product?.data?.name,
+      item?.product_name,
+      item?.variant?.name,
+      item?.variant_name,
+    ].filter(Boolean).join(' '))
+  )
+  const purchaseText = [
+    resource.name,
+    resource.title,
+    resource.reference,
+    ...itemTexts,
+  ].filter(Boolean).join(' ')
 
   const customerId =
     resourceType === 'customer'
@@ -45,6 +66,7 @@ function normalizeYampiWebhookPayload(payload) {
     customerName: customerData.name ?? resource.name ?? null,
     orderNumber: resource.number != null ? String(resource.number) : null,
     orderStatus: statusData.alias ?? transactions[0]?.status ?? null,
+    purchaseText,
   }
 }
 

@@ -1,17 +1,18 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Login from "./views/Login";
-import Register from "./views/Register";
-import SnippexForm from "./views/snippet-form";
-import Dashboard from "./views/Dashboard";
-import MySnippets from "./views/MySnippets";
-import SavedSnippets from "./views/SavedSnippets";
-import AppLayout from "./components/layout/AppLayout";
-import SnippetView from "./views/SnippetView";
-import UserConfig from "./views/UserConfig";
-import { PrivateRoute } from "./views/PrivateRoute";
-import { ToastProvider } from "./components/ui/Toast";
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './views/Login';
+import Register from './views/Register';
+import Plans from './views/Plans';
+import SnippexForm from './views/snippet-form';
+import Dashboard from './views/Dashboard';
+import MySnippets from './views/MySnippets';
+import SavedSnippets from './views/SavedSnippets';
+import AppLayout from './components/layout/AppLayout';
+import SnippetView from './views/SnippetView';
+import UserConfig from './views/UserConfig';
+import { PrivateRoute } from './views/PrivateRoute';
+import { ToastProvider } from './components/ui/Toast';
 
-import "./App.css";
+import './App.css';
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/plans" element={<Plans />} />
 
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />

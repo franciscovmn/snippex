@@ -15,8 +15,19 @@ async function createUser({ name, user_name, email, password }) {
 
 async function findUserByEmail(email) {
   const query = `
-    SELECT * FROM users
-    WHERE email = $1
+    SELECT
+      u.*,
+      us.plan_id AS subscription_plan_id,
+      us.billing_cycle AS subscription_billing_cycle,
+      us.status AS subscription_status,
+      us.checkout_url AS subscription_checkout_url,
+      us.cancel_at_period_end AS subscription_cancel_at_period_end,
+      us.current_period_end AS subscription_current_period_end,
+      us.activated_at AS subscription_activated_at,
+      us.canceled_at AS subscription_canceled_at
+    FROM users u
+    LEFT JOIN user_subscriptions us ON us.user_id = u.id
+    WHERE u.email = $1
   `
 
   const result = await pool.query(query, [email])
@@ -25,8 +36,19 @@ async function findUserByEmail(email) {
 
 async function findUserById(id) {
   const query = `
-    SELECT * FROM users
-    WHERE id = $1
+    SELECT
+      u.*,
+      us.plan_id AS subscription_plan_id,
+      us.billing_cycle AS subscription_billing_cycle,
+      us.status AS subscription_status,
+      us.checkout_url AS subscription_checkout_url,
+      us.cancel_at_period_end AS subscription_cancel_at_period_end,
+      us.current_period_end AS subscription_current_period_end,
+      us.activated_at AS subscription_activated_at,
+      us.canceled_at AS subscription_canceled_at
+    FROM users u
+    LEFT JOIN user_subscriptions us ON us.user_id = u.id
+    WHERE u.id = $1
   `
 
   const result = await pool.query(query, [id])

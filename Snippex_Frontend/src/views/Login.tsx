@@ -145,6 +145,10 @@ export default function Login() {
           {/* galera, esse botão aqui serve só pra acessar o Dashboard enquanto ainda não tiver conexão com o banco, a fim de testes */}
           <Link to="/dashboard" className="btn-github btn--full" type="button"> Entrar como visitante </Link>
 
+          <Link to="/plans" className="link-accent" style={{ display: 'inline-block', marginTop: '12px' }}>
+            Ver planos
+          </Link>
+
           <p className="auth-footer">
             Não tem conta?{" "}
             <a href="/register" className="link-accent">Registro</a>

@@ -6,6 +6,8 @@ const { authenticate } = require('../middlewares/auth')
 
 router.post('/register', userController.register)
 router.post('/login', userController.login)
+router.get('/me', authenticate, userController.getMe)
+router.put('/subscription/cancel-renewal', authenticate, userController.cancelSubscriptionRenewal)
 router.put('/edit', authenticate, userController.editProfile)
 router.put('/changePassword', authenticate, userController.changePassword)
 

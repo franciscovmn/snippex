@@ -118,11 +118,13 @@ import {
   Settings,
   LogOut,
   Bookmark,
+  CreditCard,
 } from 'lucide-react';
 import Avatar from '../ui/Avatar';
 
 const PUBLIC_NAV = [
   { to: '/dashboard', label: 'Comunidade', icon: Compass },
+  { to: '/plans', label: 'Planos', icon: CreditCard },
 ];
 
 const PRIVATE_NAV = [
@@ -229,4 +231,3 @@ const Sidebar: React.FC = () => {
 };
 
 export default Sidebar;
-

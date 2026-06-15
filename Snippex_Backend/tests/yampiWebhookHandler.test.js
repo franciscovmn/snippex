@@ -19,6 +19,9 @@ function createRepo() {
     async linkCustomerToLocalUser(email) {
       this.calls.push(['linkCustomerToLocalUser', email])
     },
+    async syncSubscriptionFromWebhook(payload) {
+      this.calls.push(['syncSubscriptionFromWebhook', payload.event, payload.orderStatus])
+    },
   }
 }
 
@@ -66,6 +69,7 @@ test('processes a paid order webhook and records customer and order data', async
     ['upsertWebhookCustomer', 'cliente@exemplo.com', '987654'],
     ['linkCustomerToLocalUser', 'cliente@exemplo.com'],
     ['upsertWebhookOrder', '123456789012', 'paid'],
+    ['syncSubscriptionFromWebhook', 'order.paid', 'paid'],
   ])
 })
 

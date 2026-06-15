@@ -21,6 +21,37 @@ async function ensureSavedSnippetsTable() {
   `)
 }
 
+async function ensureUserSubscriptionsTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_subscriptions (
+      user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      plan_id TEXT NOT NULL DEFAULT 'free',
+      billing_cycle TEXT,
+      status TEXT NOT NULL DEFAULT 'free',
+      checkout_url TEXT,
+      yampi_order_id TEXT,
+      yampi_order_number TEXT,
+      yampi_customer_email TEXT,
+      cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE,
+      current_period_end TIMESTAMPTZ,
+      activated_at TIMESTAMPTZ,
+      canceled_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_user_subscriptions_status
+    ON user_subscriptions(status, updated_at DESC)
+  `)
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_user_subscriptions_plan
+    ON user_subscriptions(plan_id, billing_cycle)
+  `)
+}
+
 async function ensureYampiTables() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS yampi_webhook_events (
@@ -100,7 +131,8 @@ async function ensureYampiTables() {
 
 async function ensureSchema() {
   await ensureSavedSnippetsTable()
+  await ensureUserSubscriptionsTable()
   await ensureYampiTables()
 }
 
-module.exports = { ensureSchema, ensureSavedSnippetsTable }
+module.exports = { ensureSchema, ensureSavedSnippetsTable, ensureUserSubscriptionsTable }

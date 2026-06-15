@@ -81,6 +81,7 @@ test('normalizes order and customer webhook payloads', () => {
     customerName: 'Cliente Exemplo',
     orderNumber: '123456789012',
     orderStatus: 'paid',
+    purchaseText: '',
   })
 
   assert.deepEqual(normalizeYampiWebhookPayload(customerPayload), {
@@ -93,5 +94,6 @@ test('normalizes order and customer webhook payloads', () => {
     customerName: 'Cliente Exemplo',
     orderNumber: null,
     orderStatus: null,
+    purchaseText: 'Cliente Exemplo',
   })
 })

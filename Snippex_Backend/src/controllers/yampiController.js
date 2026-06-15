@@ -63,6 +63,12 @@ async function handleYampiWebhook({
     })
   }
 
+  await repo.syncSubscriptionFromWebhook?.({
+    ...normalized,
+    payload,
+    signature,
+  })
+
   return { statusCode: 200, body: { status: 'processed', event: normalized.event } }
 }
 

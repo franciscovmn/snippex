@@ -1,5 +1,6 @@
 const pool = require('../config/database')
 const userRepository = require('./userRepository')
+const subscriptionRepository = require('./subscriptionRepository')
 
 async function recordWebhookEvent({ event, merchantAlias, resourceType, resourceId, customerId, payload, signature }) {
   await pool.query(
@@ -112,9 +113,14 @@ async function linkCustomerToLocalUser(email) {
   return user.id
 }
 
+async function syncSubscriptionFromWebhook(payload) {
+  return subscriptionRepository.syncSubscriptionFromYampiWebhook(payload)
+}
+
 module.exports = {
   recordWebhookEvent,
   upsertWebhookCustomer,
   upsertWebhookOrder,
   linkCustomerToLocalUser,
+  syncSubscriptionFromWebhook,
 }

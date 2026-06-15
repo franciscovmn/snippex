@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { userService } from '../services/userService';
+import { userService, type UserSubscription } from '../services/userService';
 import Avatar from '../components/ui/Avatar';
 import Button from '../components/ui/Button';
 import '../css/settings.css';
@@ -21,17 +21,39 @@ export default function UserConfig() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [canceling, setCanceling] = useState(false);
 
   useEffect(() => {
-    const user = getCurrentUser();
-    if (user) {
-      setName(user.name);
-      setUsername(user.user_name);
-      setEmail(user.email);
+    async function loadCurrentUser() {
+      const storedUser = getCurrentUser();
+      if (storedUser) {
+        setName(storedUser.name);
+        setUsername(storedUser.user_name);
+        setEmail(storedUser.email);
+      }
+
+      try {
+        const response = await userService.me();
+        const currentUser = response.user;
+        setName(currentUser.name);
+        setUsername(currentUser.user_name);
+        setEmail(currentUser.email);
+        setSubscription(currentUser.subscription ?? null);
+        localStorage.setItem('user', JSON.stringify(currentUser));
+      } catch (error) {
+        console.error('Erro ao carregar usuário logado:', error);
+        if (storedUser?.subscription) {
+          setSubscription(storedUser.subscription);
+        }
+      } finally {
+        setLoading(false);
+      }
     }
-    setLoading(false);
+
+    loadCurrentUser();
   }, []);
 
   async function handleProfileSave(e: React.FormEvent<HTMLFormElement>) {
@@ -50,6 +72,35 @@ export default function UserConfig() {
       alert(error?.response?.data?.error || 'Erro ao atualizar perfil.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleCancelRenewal() {
+    const confirmed = window.confirm(
+      'Cancelar a renovação mantém o acesso até o fim do período já pago. Deseja continuar?'
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setCanceling(true);
+      const response = await userService.cancelSubscriptionRenewal();
+      setSubscription(response.user.subscription ?? null);
+
+      const currentUser = getCurrentUser();
+      if (currentUser) {
+        localStorage.setItem('user', JSON.stringify({
+          ...currentUser,
+          subscription: response.user.subscription,
+        }));
+      }
+
+      alert('Renovação cancelada. O acesso segue até o fim do período pago.');
+    } catch (error: any) {
+      console.error(error);
+      alert(error?.response?.data?.error || 'Erro ao cancelar renovação.');
+    } finally {
+      setCanceling(false);
     }
   }
 
@@ -108,6 +159,58 @@ export default function UserConfig() {
             <p>{username ? `@${username}` : 'Sem usuário'}</p>
           </div>
         </div>
+
+        <section className="card settings-card">
+          <div className="settings-card-head">
+            <h3>Assinatura</h3>
+            <p>Acompanhe o plano atual e o ciclo de cobrança.</p>
+          </div>
+
+          {subscription ? (
+            <div className="subscription-summary">
+              <div className="subscription-summary__row">
+                <span>Plano</span>
+                <strong>{subscription.plan_id === 'free' ? 'Freemium' : subscription.plan_id.toUpperCase()}</strong>
+              </div>
+              <div className="subscription-summary__row">
+                <span>Ciclo</span>
+                <strong>
+                  {subscription.billing_cycle === 'yearly'
+                    ? 'Anual'
+                    : subscription.billing_cycle === 'monthly'
+                      ? 'Mensal'
+                      : 'Sem cobrança'}
+                </strong>
+              </div>
+              <div className="subscription-summary__row">
+                <span>Status</span>
+                <strong>{subscription.cancel_at_period_end ? 'Cancelamento agendado' : subscription.status}</strong>
+              </div>
+              <div className="subscription-summary__row">
+                <span>Válido até</span>
+                <strong>
+                  {subscription.current_period_end
+                    ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium' }).format(new Date(subscription.current_period_end))
+                    : 'Sem data definida'}
+                </strong>
+              </div>
+
+              {subscription.status !== 'free' && !subscription.cancel_at_period_end && (
+                <Button variant="secondary" type="button" onClick={handleCancelRenewal} disabled={canceling}>
+                  {canceling ? 'Cancelando...' : 'Cancelar renovação'}
+                </Button>
+              )}
+
+              {subscription.cancel_at_period_end && (
+                <p className="subscription-note">
+                  A renovação já está cancelada. O acesso continua até o fim do período pago.
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="subscription-note">Nenhuma assinatura vinculada a esta conta.</p>
+          )}
+        </section>
 
         <section className="card settings-card">
           <div className="settings-card-head">

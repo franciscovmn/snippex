@@ -12,11 +12,16 @@ No Vercel:
 
 - importe o repositório
 - selecione `Snippex_Frontend`
+- defina o `Root Directory` como `Snippex_Frontend`
+- mantenha o framework em `Vite` ou `Other` se ele detectar errado
+- use `npm run build` como build command
+- use `dist` como output directory
 - defina as variaveis de ambiente:
   - `VITE_API_URL=https://SEU_BACKEND.up.railway.app`
   - `VITE_SUPABASE_URL=...`
   - `VITE_SUPABASE_ANON_KEY=...`
 - deixe o build padrao do Vite
+- o arquivo `Snippex_Frontend/vercel.json` garante fallback para rotas do React Router
 
 O Vercel vai publicar em um subdominio `vercel.app`.
 
