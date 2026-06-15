@@ -3,15 +3,18 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Snippet } from '../types/snippet';
 import { snippetService } from '../services/snippetService';
 import SnippetCard from '../components/SnippetCard';
-
-type Sort = 'recent' | 'popular';
+import EmptyState from '../components/ui/EmptyState';
+import PageHeader from '../components/ui/PageHeader';
+import { useToast } from '../components/ui/Toast';
 
 const Dashboard: React.FC = () => {
   const [communitySnippets, setCommunitySnippets] = useState<Snippet[]>([]);
   const [activeLang, setActiveLang] = useState<string>('All');
-  const [sort, setSort] = useState<Sort>('recent');
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const searchQuery = searchParams.get('search') || '';
 
   useEffect(() => {
@@ -25,6 +28,42 @@ const Dashboard: React.FC = () => {
     };
     fetchCommunitySnippets();
   }, []);
+
+  const handleCopy = async (snippet: Snippet) => {
+    if (!snippet.id) return;
+    try {
+      await navigator.clipboard.writeText(snippet.code);
+      setCopiedId(snippet.id);
+      showToast('Código copiado', 'success');
+      window.setTimeout(() => setCopiedId((current) => (current === snippet.id ? null : current)), 1400);
+    } catch {
+      showToast('Não foi possível copiar', 'danger');
+    }
+  };
+
+  const handleToggleSave = async (snippet: Snippet) => {
+    if (!snippet.id || savingId) return;
+    try {
+      setSavingId(snippet.id);
+      if (snippet.is_saved) {
+        await snippetService.unsaveSnippet(snippet.id);
+        setCommunitySnippets((current) => current.map((item) => item.id === snippet.id ? { ...item, is_saved: false } : item));
+        showToast('Removido dos salvos');
+      } else {
+        await snippetService.saveSnippet(snippet.id);
+        setCommunitySnippets((current) => current.map((item) => item.id === snippet.id ? { ...item, is_saved: true } : item));
+        showToast('Snippet salvo', 'success');
+      }
+    } catch {
+      showToast('Não foi possível atualizar os salvos', 'danger');
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const handleTagClick = (tag: string) => {
+    navigate(`/dashboard?search=${encodeURIComponent(tag)}`);
+  };
 
   // Linguagens disponíveis para os chips de filtro
   const languages = useMemo(() => {
@@ -45,25 +84,24 @@ const Dashboard: React.FC = () => {
       return matchesLang && matchesSearch;
     });
 
-    // "Recentes" por data; "Populares" não tem métrica no backend ainda,
-    // então cai no mesmo critério (placeholder até existir contador).
     return [...list].sort((a, b) => {
       const da = new Date(a.created_at ?? 0).getTime();
       const db = new Date(b.created_at ?? 0).getTime();
       return db - da;
     });
-  }, [communitySnippets, activeLang, searchQuery, sort]);
+  }, [communitySnippets, activeLang, searchQuery]);
 
   return (
     <main className="main-content">
       <div className="page">
-        <div className="page-header">
-          <h1>Comunidade</h1>
-          <p className="page-subtitle">
-            {searchQuery
+        <PageHeader
+          title="Comunidade"
+          subtitle={
+            searchQuery
               ? `Resultados da busca por "${searchQuery}"`
-              : `Explore ${communitySnippets.length} snippets compartilhados pela comunidade`}
-          </p>
+              : `Explore ${communitySnippets.length} snippets compartilhados pela comunidade`
+          }
+        >
 
           <div className="filter-bar">
             {languages.map((lang) => (
@@ -75,24 +113,25 @@ const Dashboard: React.FC = () => {
                 {lang}
               </button>
             ))}
-            <span className="filter-spacer" />
-            <div className="sort-toggle">
-              <button className={`chip ${sort === 'recent' ? 'active' : ''}`} onClick={() => setSort('recent')}>
-                Recentes
-              </button>
-              <button className={`chip ${sort === 'popular' ? 'active' : ''}`} onClick={() => setSort('popular')}>
-                Populares
-              </button>
-            </div>
           </div>
-        </div>
+        </PageHeader>
 
         <div className="snippets-grid">
           {filteredSnippets.length === 0 ? (
-            <div className="empty-state">Nenhum snippet encontrado.</div>
+            <EmptyState title="Nenhum snippet encontrado" description="Ajuste os filtros ou faça uma nova busca." />
           ) : (
             filteredSnippets.map((snippet) => (
-              <SnippetCard key={snippet.id} snippet={snippet} onOpen={() => navigate(`/snippet/${snippet.id}`)} />
+              <SnippetCard
+                key={snippet.id}
+                snippet={snippet}
+                onOpen={() => navigate(`/snippet/${snippet.id}`)}
+                canSave
+                copied={copiedId === snippet.id}
+                saving={savingId === snippet.id}
+                onCopy={() => handleCopy(snippet)}
+                onToggleSave={() => handleToggleSave(snippet)}
+                onTagClick={handleTagClick}
+              />
             ))
           )}
         </div>

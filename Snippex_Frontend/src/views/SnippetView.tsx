@@ -624,7 +624,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Sparkles, Lightbulb, Loader, ArrowLeft,
-  Globe, Lock, Users, MessageSquare, Pencil, Trash2, Bookmark,
+  Globe, Lock, Users, MessageSquare, Pencil, Trash2, Bookmark, Copy, Check,
 } from 'lucide-react';
 import { snippetService } from '../services/snippetService';
 import { commentService } from '../services/commentService';
@@ -637,7 +637,11 @@ import CodeBlock from '../components/CodeBlock';
 import LanguageBadge from '../components/ui/LanguageBadge';
 import Avatar from '../components/ui/Avatar';
 import Button from '../components/ui/Button';
+import IconButton from '../components/ui/IconButton';
+import ActionBar from '../components/ui/ActionBar';
+import TagChip from '../components/ui/TagChip';
 import Skeleton from '../components/ui/Skeleton';
+import { useToast } from '../components/ui/Toast';
 import { timeAgo } from '../lib/timeAgo';
 import '../css/snippet-view.css';
 
@@ -651,7 +655,9 @@ const SnippetView: React.FC = () => {
   const [newComment, setNewComment] = useState('');
   const [editingComment, setEditingComment] = useState<Comment | null>(null);
   const [savingSnippet, setSavingSnippet] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [slow, setSlow] = useState(false);
+  const { showToast } = useToast();
 
   const loadComments = async () => {
     try {
@@ -720,17 +726,27 @@ const SnippetView: React.FC = () => {
 
   const handleAddComment = async (comment: string) => {
     if (!id || !comment.trim()) return;
-    const payload: CreateCommentInput = { snippet_id: id, content: comment };
-    await commentService.postComment(payload);
-    setNewComment('');
-    loadComments();
+    try {
+      const payload: CreateCommentInput = { snippet_id: id, content: comment };
+      await commentService.postComment(payload);
+      setNewComment('');
+      loadComments();
+      showToast('Comentário publicado', 'success');
+    } catch {
+      showToast('Não foi possível comentar', 'danger');
+    }
   };
 
   const handleDeleteComment = async (commentId: string) => {
     if (!commentId) return;
     if (!window.confirm('Deseja mesmo excluir o comentário?')) return;
-    await commentService.deleteComment(commentId);
-    loadComments();
+    try {
+      await commentService.deleteComment(commentId);
+      loadComments();
+      showToast('Comentário excluído');
+    } catch {
+      showToast('Não foi possível excluir o comentário', 'danger');
+    }
   };
 
   const handleToggleSave = async () => {
@@ -741,22 +757,52 @@ const SnippetView: React.FC = () => {
       if (snippet.is_saved) {
         await snippetService.unsaveSnippet(id);
         setSnippet((prev) => (prev ? { ...prev, is_saved: false } : prev));
+        showToast('Removido dos salvos');
       } else {
         await snippetService.saveSnippet(id);
         setSnippet((prev) => (prev ? { ...prev, is_saved: true } : prev));
+        showToast('Snippet salvo', 'success');
       }
     } catch (err) {
       console.error(err);
-      alert('Não foi possível atualizar seus salvos.');
+      showToast('Não foi possível atualizar os salvos', 'danger');
     } finally {
       setSavingSnippet(false);
     }
   };
 
+  const handleCopyCode = async () => {
+    if (!snippet) return;
+    try {
+      await navigator.clipboard.writeText(snippet.code);
+      setCopied(true);
+      showToast('Código copiado', 'success');
+      window.setTimeout(() => setCopied(false), 1400);
+    } catch {
+      showToast('Não foi possível copiar', 'danger');
+    }
+  };
+
+  const handleDeleteSnippet = async () => {
+    if (!id) return;
+    if (!window.confirm('Tem a certeza que deseja eliminar este snippet?')) return;
+    try {
+      await snippetService.deleteSnippet(id);
+      showToast('Snippet excluído');
+      navigate('/my-snippets');
+    } catch {
+      showToast('Não foi possível excluir o snippet', 'danger');
+    }
+  };
+
+  const handleTagClick = (tag: string) => {
+    navigate(`/dashboard?search=${encodeURIComponent(tag)}`);
+  };
+
   // Verificação do usuário logado trazida da tela antiga
   const userLogged = (): boolean => {
     const userStorage = localStorage.getItem('user');
-    return userStorage !== null && userStorage !== "";
+    return userStorage !== null && userStorage !== '';
   };
 
   const userStorage = localStorage.getItem('user');
@@ -792,6 +838,7 @@ const SnippetView: React.FC = () => {
 
   const isFallback = hasExplanation && explanationText.startsWith('Falha ao gerar explicação');
   const isGenerating = !hasExplanation;
+  const isOwner = !!loggedUserId && String(snippet.user_id) === String(loggedUserId);
   const author = (snippet as unknown as { user_name?: string }).user_name;
 
   const VisIcon = snippet.visibility === 'PRIVATE' ? Lock : snippet.visibility === 'TEAM' ? Users : Globe;
@@ -800,22 +847,32 @@ const SnippetView: React.FC = () => {
   return (
     <main className="main-content">
       <div className="snippet-detail">
-        <div className="detail-back">
+        <ActionBar className="detail-actions">
           <Button variant="ghost" size="sm" leftIcon={<ArrowLeft size={16} />} onClick={() => navigate(-1)}>
             Voltar
           </Button>
+          <span className="action-bar-spacer" />
+          <IconButton
+            label={copied ? 'Copiado' : 'Copiar código'}
+            icon={copied ? <Check size={16} /> : <Copy size={16} />}
+            onClick={handleCopyCode}
+          />
           {loggedUserId && (
-            <Button
+            <IconButton
+              label={snippet.is_saved ? 'Remover dos salvos' : 'Salvar snippet'}
               variant={snippet.is_saved ? 'secondary' : 'ghost'}
-              size="sm"
-              leftIcon={<Bookmark size={16} fill={snippet.is_saved ? 'currentColor' : 'none'} />}
+              icon={<Bookmark size={16} fill={snippet.is_saved ? 'currentColor' : 'none'} />}
               onClick={handleToggleSave}
               disabled={savingSnippet}
-            >
-              {snippet.is_saved ? 'Salvo' : 'Salvar'}
-            </Button>
+            />
           )}
-        </div>
+          {isOwner && (
+            <>
+              <IconButton label="Editar" icon={<Pencil size={16} />} onClick={() => navigate(`/edit/${id}`)} />
+              <IconButton label="Excluir" variant="danger" icon={<Trash2 size={16} />} onClick={handleDeleteSnippet} />
+            </>
+          )}
+        </ActionBar>
 
         {/* Header */}
         <div className="detail-header">
@@ -841,6 +898,13 @@ const SnippetView: React.FC = () => {
               </>
             )}
           </div>
+          {snippet.tags && snippet.tags.length > 0 && (
+            <div className="tag-list detail-tags">
+              {snippet.tags.map((tag) => (
+                <TagChip key={tag} tag={tag} onClick={() => handleTagClick(tag)} />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* 2 colunas: código | análise */}
@@ -854,6 +918,13 @@ const SnippetView: React.FC = () => {
             <div className="card">
               <div className="ai-card-header">
                 <span className="ai-card-title"><Sparkles size={16} /> Explicação</span>
+                {isFallback ? (
+                  <span className="status-badge status-badge-danger">Falhou</span>
+                ) : isGenerating ? (
+                  <span className="status-badge status-badge-warning">Pendente</span>
+                ) : (
+                  <span className="status-badge status-badge-success">Gerada</span>
+                )}
               </div>
 
               {isFallback ? (

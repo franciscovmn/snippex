@@ -60,7 +60,16 @@ async function getPublicSnippets({ limit = 20, offset = 0 }) {
 
 async function getVisibleSnippets(userId, teamId, { limit = 20, offset = 0 }) {
   const query = `
-    SELECT s.*, u.user_name, u.email
+    SELECT
+      s.*,
+      u.user_name,
+      u.email,
+      EXISTS (
+        SELECT 1
+        FROM saved_snippets ss
+        WHERE ss.user_id = $1
+          AND ss.snippet_id = s.id
+      ) AS is_saved
     FROM snippets s
     JOIN users u ON u.id = s.user_id
     WHERE s.deleted_at IS NULL

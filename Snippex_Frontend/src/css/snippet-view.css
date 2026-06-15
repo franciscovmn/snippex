@@ -9,7 +9,8 @@
   color: var(--color-text-secondary); font-size: 13px;
 }
 .detail-meta .sep { color: var(--color-text-muted); }
-.detail-back { margin-bottom: 16px; }
+.detail-actions { margin-bottom: 16px; }
+.detail-tags { margin-top: 12px; }
 
 .detail-grid {
   display: grid;

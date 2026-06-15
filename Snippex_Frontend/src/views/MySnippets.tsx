@@ -3,6 +3,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Snippet } from '../types/snippet';
 import { snippetService } from '../services/snippetService';
 import SnippetCard from '../components/SnippetCard';
+import EmptyState from '../components/ui/EmptyState';
+import PageHeader from '../components/ui/PageHeader';
+import { useToast } from '../components/ui/Toast';
 
 type VisFilter = 'ALL' | 'PUBLIC' | 'PRIVATE' | 'TEAM';
 
@@ -16,8 +19,10 @@ const FILTERS: { key: VisFilter; label: string }[] = [
 const MySnippets: React.FC = () => {
   const [snippets, setSnippets] = useState<Snippet[]>([]);
   const [filter, setFilter] = useState<VisFilter>('ALL');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const searchQuery = searchParams.get('search') || '';
 
   useEffect(() => {
@@ -39,8 +44,9 @@ const MySnippets: React.FC = () => {
     try {
       await snippetService.deleteSnippet(id);
       setSnippets((prev) => prev.filter((snippet) => snippet.id !== id));
+      showToast('Snippet excluído');
     } catch (error) {
-      alert('Não foi possível eliminar o snippet.');
+      showToast('Não foi possível excluir o snippet', 'danger');
     }
   };
 
@@ -48,6 +54,22 @@ const MySnippets: React.FC = () => {
     e.stopPropagation();
     if (!id) return;
     navigate(`/edit/${id}`);
+  };
+
+  const handleCopy = async (snippet: Snippet) => {
+    if (!snippet.id) return;
+    try {
+      await navigator.clipboard.writeText(snippet.code);
+      setCopiedId(snippet.id);
+      showToast('Código copiado', 'success');
+      window.setTimeout(() => setCopiedId((current) => (current === snippet.id ? null : current)), 1400);
+    } catch {
+      showToast('Não foi possível copiar', 'danger');
+    }
+  };
+
+  const handleTagClick = (tag: string) => {
+    navigate(`/my-snippets?search=${encodeURIComponent(tag)}`);
   };
 
   const filteredSnippets = useMemo(() => {
@@ -66,11 +88,10 @@ const MySnippets: React.FC = () => {
   return (
     <main className="main-content">
       <div className="page">
-        <div className="page-header">
-          <h1>Meus Snippets</h1>
-          <p className="page-subtitle">
-            {searchQuery ? `Resultados da busca por "${searchQuery}"` : `${snippets.length} snippets criados`}
-          </p>
+        <PageHeader
+          title="Meus Snippets"
+          subtitle={searchQuery ? `Resultados da busca por "${searchQuery}"` : `${snippets.length} snippets criados`}
+        >
 
           <div className="filter-bar">
             {FILTERS.map(({ key, label }) => (
@@ -79,11 +100,11 @@ const MySnippets: React.FC = () => {
               </button>
             ))}
           </div>
-        </div>
+        </PageHeader>
 
         <div className="snippets-grid">
           {filteredSnippets.length === 0 ? (
-            <div className="empty-state">Nenhum snippet encontrado.</div>
+            <EmptyState title="Nenhum snippet encontrado" description="Ajuste os filtros ou crie um novo snippet." />
           ) : (
             filteredSnippets.map((snippet) => (
               <SnippetCard
@@ -91,8 +112,11 @@ const MySnippets: React.FC = () => {
                 snippet={snippet}
                 onOpen={() => navigate(`/snippet/${snippet.id}`)}
                 showActions
+                copied={copiedId === snippet.id}
+                onCopy={() => handleCopy(snippet)}
                 onEdit={(e) => handleEdit(e, snippet.id)}
                 onDelete={(e) => handleDelete(e, snippet.id)}
+                onTagClick={handleTagClick}
               />
             ))
           )}

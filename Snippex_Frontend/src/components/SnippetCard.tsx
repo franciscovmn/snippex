@@ -1,10 +1,11 @@
 import React from 'react';
-import { FileCode, Sparkles, Globe, Lock, Users, Pencil, Trash2 } from 'lucide-react';
+import { Bookmark, Check, Copy, FileCode, Globe, Lock, Pencil, Sparkles, Trash2, Users } from 'lucide-react';
 import type { Snippet } from '../types/snippet';
 import Card from './ui/Card';
-import Button from './ui/Button';
+import IconButton from './ui/IconButton';
 import Avatar from './ui/Avatar';
 import LanguageBadge from './ui/LanguageBadge';
+import TagChip from './ui/TagChip';
 import { timeAgo } from '../lib/timeAgo';
 
 interface Props {
@@ -12,8 +13,14 @@ interface Props {
   onOpen: () => void;
   /** Mostra ações de editar/excluir no hover (tela "Meus Snippets"). */
   showActions?: boolean;
+  canSave?: boolean;
+  copied?: boolean;
+  saving?: boolean;
   onEdit?: (e: React.MouseEvent) => void;
   onDelete?: (e: React.MouseEvent) => void;
+  onCopy?: (e: React.MouseEvent) => void;
+  onToggleSave?: (e: React.MouseEvent) => void;
+  onTagClick?: (tag: string, e: React.MouseEvent) => void;
 }
 
 function VisibilityTag({ visibility }: { visibility?: string }) {
@@ -22,7 +29,19 @@ function VisibilityTag({ visibility }: { visibility?: string }) {
   return <span className="snippet-card-footer"><Globe size={12} /> Público</span>;
 }
 
-const SnippetCard: React.FC<Props> = ({ snippet, onOpen, showActions, onEdit, onDelete }) => {
+const SnippetCard: React.FC<Props> = ({
+  snippet,
+  onOpen,
+  showActions,
+  canSave,
+  copied,
+  saving,
+  onEdit,
+  onDelete,
+  onCopy,
+  onToggleSave,
+  onTagClick,
+}) => {
   const author = (snippet as unknown as { user_name?: string }).user_name;
   const TypeIcon = snippet.type === 'prompt' ? Sparkles : FileCode;
 
@@ -55,6 +74,21 @@ const SnippetCard: React.FC<Props> = ({ snippet, onOpen, showActions, onEdit, on
         <code>{snippet.code?.slice(0, 180)}</code>
       </pre>
 
+      {snippet.tags && snippet.tags.length > 0 && (
+        <div className="tag-list snippet-card-tags">
+          {snippet.tags.slice(0, 4).map((tag) => (
+            <TagChip
+              key={tag}
+              tag={tag}
+              onClick={(e) => {
+                e.stopPropagation();
+                onTagClick?.(tag, e);
+              }}
+            />
+          ))}
+        </div>
+      )}
+
       <div className="snippet-card-footer">
         {author ? (
           <>
@@ -67,14 +101,54 @@ const SnippetCard: React.FC<Props> = ({ snippet, onOpen, showActions, onEdit, on
         <span className="sep">•</span>
         <span>{timeAgo(snippet.created_at)}</span>
 
-        {showActions && (
+        {(showActions || canSave || onCopy) && (
           <div className="snippet-card-actions">
-            <Button size="sm" variant="ghost" leftIcon={<Pencil size={14} />} onClick={onEdit} aria-label="Editar">
-              Editar
-            </Button>
-            <Button size="sm" variant="danger" leftIcon={<Trash2 size={14} />} onClick={onDelete} aria-label="Excluir">
-              Excluir
-            </Button>
+            {onCopy && (
+              <IconButton
+                size="sm"
+                label={copied ? 'Copiado' : 'Copiar código'}
+                icon={copied ? <Check size={14} /> : <Copy size={14} />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCopy(e);
+                }}
+              />
+            )}
+            {canSave && onToggleSave && (
+              <IconButton
+                size="sm"
+                label={snippet.is_saved ? 'Remover dos salvos' : 'Salvar snippet'}
+                icon={<Bookmark size={14} fill={snippet.is_saved ? 'currentColor' : 'none'} />}
+                disabled={saving}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleSave(e);
+                }}
+              />
+            )}
+            {showActions && onEdit && (
+              <IconButton
+                size="sm"
+                label="Editar"
+                icon={<Pencil size={14} />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(e);
+                }}
+              />
+            )}
+            {showActions && onDelete && (
+              <IconButton
+                size="sm"
+                variant="danger"
+                label="Excluir"
+                icon={<Trash2 size={14} />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(e);
+                }}
+              />
+            )}
           </div>
         )}
       </div>

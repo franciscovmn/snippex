@@ -8,7 +8,7 @@ const { authenticate, optionalAuth } = require('../middlewares/auth')
 // ──────────────────────────────────────────────────────────
 
 // Feed público — GET /api/snippets?limit=20&offset=0
-router.get('/', snippetController.listPublic)
+router.get('/', optionalAuth, snippetController.listPublic)
 
 // Busca por tag — GET /api/snippets/tag/javascript
 router.get('/tag/:tag', snippetController.listByTag)
