@@ -5,6 +5,7 @@ const cors = require('cors')
 const snippetRoutes = require('./routes/snippetRoutes')
 const userRoutes = require('./routes/userRoutes')
 const commentRoutes = require('./routes/commentRoutes')
+const yampiRoutes = require('./routes/yampiRoutes')
 const { ensureSchema } = require('./config/ensureSchema')
 
 const app  = express()
@@ -12,12 +13,17 @@ const PORT = process.env.PORT || 3000
 
 // ── Middlewares globais ───────────────────────
 app.use(cors())
-app.use(express.json())
+app.use(express.json({
+  verify: (req, _res, buf) => {
+    req.rawBody = buf?.length ? buf.toString('utf8') : ''
+  },
+}))
 
 // ── Rotas ─────────────────────────────────────
 app.use('/api/snippets', snippetRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/comments', commentRoutes)
+app.use('/api/integrations/yampi', yampiRoutes)
 
 // ── Health check ──────────────────────────────
 app.get('/health', (req, res) => res.json({ status: 'ok' }))
