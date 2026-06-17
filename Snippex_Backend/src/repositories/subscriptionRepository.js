@@ -90,17 +90,20 @@ async function updateSubscriptionForUser(userId, updates) {
 
 async function syncSubscriptionFromYampiWebhook(payload) {
   const { customerEmail, purchaseText, event, orderStatus, resourceId, orderNumber } = payload
-  if (!customerEmail) return null
+  if (!customerEmail && !payload.snippexUserId) return null
 
-  const user = await userRepository.findUserByEmail(customerEmail)
+  const user = payload.snippexUserId
+    ? await userRepository.findUserById(payload.snippexUserId)
+    : await userRepository.findUserByEmail(customerEmail)
   if (!user) return null
 
   const currentSubscription = await getSubscriptionByUserId(user.id)
   const textMatch = deriveSubscriptionPlanFromText(purchaseText)
-  const planId = currentSubscription?.plan_id && currentSubscription.plan_id !== 'free'
+  const planId = payload.planId
+    ?? (currentSubscription?.plan_id && currentSubscription.plan_id !== 'free'
     ? currentSubscription.plan_id
-    : textMatch.planId ?? currentSubscription?.plan_id ?? 'free'
-  const billingCycle = currentSubscription?.billing_cycle ?? textMatch.billingCycle ?? null
+    : textMatch.planId ?? currentSubscription?.plan_id ?? 'free')
+  const billingCycle = payload.billingCycle ?? currentSubscription?.billing_cycle ?? textMatch.billingCycle ?? null
   const status = resolveSubscriptionStatusFromYampi({ event, orderStatus }) ?? currentSubscription?.status ?? 'pending_payment'
 
   const currentPeriodEnd =

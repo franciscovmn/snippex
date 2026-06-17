@@ -99,6 +99,28 @@ async function getSnippetsByUser(userId) {
   return rows
 }
 
+async function getUsageByUser(userId) {
+  const query = `
+    SELECT
+      COUNT(*)::int AS total_snippets,
+      COUNT(*) FILTER (
+        WHERE explanation IS NOT NULL
+          AND btrim(explanation) <> ''
+      )::int AS ai_explanation_snippets
+    FROM snippets
+    WHERE user_id = $1
+      AND deleted_at IS NULL
+  `
+
+  const { rows } = await pool.query(query, [userId])
+  const usage = rows[0] ?? {}
+
+  return {
+    totalSnippets: Number(usage.total_snippets ?? 0),
+    aiExplanationSnippets: Number(usage.ai_explanation_snippets ?? 0),
+  }
+}
+
 /**
  * Retorna um snippet pelo ID.
  * Snippets privados só são retornados se o userId bater com o dono.
@@ -330,6 +352,7 @@ module.exports = {
   getPublicSnippets,
   getVisibleSnippets, // para ter a comunidade com visibilidade
   getSnippetsByUser,
+  getUsageByUser,
   getSnippetById,
   getSavedSnippetsByUser,
   getSnippetsByTag,

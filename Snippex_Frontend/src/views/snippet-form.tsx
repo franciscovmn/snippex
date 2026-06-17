@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FileCode, Sparkles, Globe, Users, Lock, ChevronDown } from 'lucide-react';
+import axios from 'axios';
 import '../css/snippet-form.css';
 
 import type { Snippet, Visibility } from '../types/snippet';
@@ -85,7 +86,12 @@ const SnippexForm = () => {
       }
     } catch (error: unknown) {
       console.error('Erro ao salvar snippet:', error);
-      alert('Não foi possível salvar o snippet. Tente novamente.');
+      const message =
+        axios.isAxiosError(error) && typeof error.response?.data?.error === 'string'
+          ? error.response.data.error
+          : 'Não foi possível salvar o snippet. Tente novamente.';
+
+      alert(message);
     }
   }
 

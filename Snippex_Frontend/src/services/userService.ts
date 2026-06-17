@@ -47,4 +47,12 @@ export const userService = {
     const response = await api.put('/api/users/subscription/cancel-renewal')
     return response.data
   },
+
+  async createCheckoutIntent(planId: 'pro' | 'team', billingCycle: 'monthly' | 'yearly') {
+    const response = await api.post('/api/users/subscription/checkout-intent', {
+      planId,
+      billingCycle,
+    })
+    return response.data
+  },
 };

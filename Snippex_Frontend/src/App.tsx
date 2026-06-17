@@ -9,6 +9,8 @@ import SavedSnippets from './views/SavedSnippets';
 import AppLayout from './components/layout/AppLayout';
 import SnippetView from './views/SnippetView';
 import UserConfig from './views/UserConfig';
+import AuthCallback from './views/AuthCallback';
+import CheckoutSuccess from './views/CheckoutSuccess';
 import { PrivateRoute } from './views/PrivateRoute';
 import { ToastProvider } from './components/ui/Toast';
 
@@ -21,12 +23,14 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/plans" element={<Plans />} />
 
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/snippet/:id" element={<SnippetView />} />
+            <Route path="/plans" element={<Plans />} />
+            <Route path="/checkout/success" element={<CheckoutSuccess />} />
 
             <Route element={<PrivateRoute />}>
               <Route path="/my-snippets" element={<MySnippets />} />

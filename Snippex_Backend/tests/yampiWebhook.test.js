@@ -97,3 +97,93 @@ test('normalizes order and customer webhook payloads', () => {
     purchaseText: 'Cliente Exemplo',
   })
 })
+
+test('normalizes plan and billing cycle from Yampi item SKU', () => {
+  const createPayload = (sku) => ({
+    event: 'order.paid',
+    merchant: { alias: 'snippex-ia' },
+    resource: {
+      id: 165211245,
+      number: 1500437616410530,
+      customer: {
+        data: {
+          id: 259885618,
+          email: 'cliente@exemplo.com',
+          name: 'Cliente Exemplo',
+        },
+      },
+      status: {
+        data: {
+          alias: 'paid',
+        },
+      },
+      items: {
+        data: [
+          {
+            sku: {
+              data: {
+                sku,
+              },
+            },
+          },
+        ],
+      },
+    },
+  })
+
+  assert.deepEqual(normalizeYampiWebhookPayload(createPayload('SWYVNVE8G')), {
+    event: 'order.paid',
+    merchantAlias: 'snippex-ia',
+    resourceType: 'order',
+    resourceId: '165211245',
+    customerId: '259885618',
+    customerEmail: 'cliente@exemplo.com',
+    customerName: 'Cliente Exemplo',
+    orderNumber: '1500437616410530',
+    orderStatus: 'paid',
+    purchaseText: 'SWYVNVE8G',
+    planId: 'pro',
+    billingCycle: 'monthly',
+  })
+
+  assert.equal(normalizeYampiWebhookPayload(createPayload('96TRA8KYC')).planId, 'pro')
+  assert.equal(normalizeYampiWebhookPayload(createPayload('96TRA8KYC')).billingCycle, 'yearly')
+  assert.equal(normalizeYampiWebhookPayload(createPayload('9RBC46XL5')).planId, 'team')
+  assert.equal(normalizeYampiWebhookPayload(createPayload('9RBC46XL5')).billingCycle, 'monthly')
+  assert.equal(normalizeYampiWebhookPayload(createPayload('RBJB2EJ4C')).planId, 'team')
+  assert.equal(normalizeYampiWebhookPayload(createPayload('RBJB2EJ4C')).billingCycle, 'yearly')
+})
+
+test('normalizes Snippex checkout metadata from Yampi payload', () => {
+  const payload = {
+    event: 'order.paid',
+    merchant: { alias: 'snippex-ia' },
+    resource: {
+      id: 165211245,
+      number: 1500437616410530,
+      customer: { data: { id: 259885618, email: 'checkout@exemplo.com' } },
+      status: { data: { alias: 'paid' } },
+      metadata: {
+        data: [
+          { key: 'source_platform', value: 'snippex' },
+          { key: 'snippex_user_id', value: '194f6d66-eba9-4a2c-8211-025048a21ae4' },
+          { key: 'snippex_plan_id', value: 'pro' },
+          { key: 'snippex_billing_cycle', value: 'monthly' },
+        ],
+      },
+      items: {
+        data: [
+          { sku: { data: { sku: 'SWYVNVE8G' } } },
+        ],
+      },
+    },
+  }
+
+  const normalized = normalizeYampiWebhookPayload(payload)
+
+  assert.equal(normalized.snippexUserId, '194f6d66-eba9-4a2c-8211-025048a21ae4')
+  assert.equal(normalized.snippexPlanId, 'pro')
+  assert.equal(normalized.snippexBillingCycle, 'monthly')
+  assert.equal(normalized.planId, 'pro')
+  assert.equal(normalized.billingCycle, 'monthly')
+})

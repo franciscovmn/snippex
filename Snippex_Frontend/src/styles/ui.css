@@ -3,6 +3,23 @@
    ========================================================================== */
 
 /* ── Button ───────────────────────────────────────────────────────────── */
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-primary);
+  transition: opacity var(--transition), color var(--transition);
+}
+.logo:hover { opacity: 0.84; text-decoration: none; }
+.logo__icon { color: var(--color-accent-success); flex-shrink: 0; }
+.logo__text {
+  font-family: var(--font-ui);
+  font-size: var(--text-h3);
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--color-text-primary);
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -227,14 +244,10 @@
 .sidebar-logo {
   display: flex;
   align-items: center;
-  gap: 8px;
   padding: 16px;
-  font-size: var(--text-h3);
-  font-weight: 600;
-  color: var(--color-text-primary);
   border-bottom: 1px solid var(--color-border-muted);
 }
-.sidebar-logo svg { color: var(--color-accent-success); }
+.sidebar-logo .logo__icon { width: 24px; height: 24px; }
 .sidebar-nav { display: flex; flex-direction: column; gap: 2px; padding: 12px 8px; flex: 1; }
 .nav-item {
   display: flex;

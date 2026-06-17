@@ -1,32 +1,10 @@
 .plans-page {
-  min-height: 100vh;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   background: var(--color-bg-canvas);
   color: var(--color-text-primary);
   padding: 24px;
-}
-
-.plans-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 32px;
-}
-
-.plans-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.plans-topbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.plans-topbar-link {
-  color: var(--color-text-secondary);
 }
 
 .plans-hero {
@@ -185,11 +163,6 @@
 @media (max-width: 720px) {
   .plans-page {
     padding: 16px;
-  }
-
-  .plans-topbar {
-    flex-direction: column;
-    align-items: flex-start;
   }
 
   .plans-hero-copy h1 {

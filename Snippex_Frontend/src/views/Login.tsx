@@ -2,10 +2,11 @@ import { useState } from "react";
 import { SnippexLogo } from "../components/SnippexLogo";
 import { LangNav } from "../components/LangNav";
 import { BgCode } from "../components/BgCode";
-import { GithubIcon } from "../components/GithubIcon";
+import { GoogleIcon } from "../components/GoogleIcon";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabaseClient";
 import "../css/form.css";
 
 type DemoRole = "individual" | "equipe" | "empresarial";
@@ -15,6 +16,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -37,6 +39,28 @@ export default function Login() {
     alert("E-mail ou senha inválidos.");
   }
 }
+
+  async function handleGoogleLogin() {
+    if (!supabase) {
+      alert("Supabase ainda não está configurado para login com Google.");
+      return;
+    }
+
+    setGoogleLoading(true);
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      console.error(error);
+      setGoogleLoading(false);
+      alert("Não foi possível iniciar o login com Google.");
+    }
+  }
 
   return (
     <>
@@ -135,15 +159,20 @@ export default function Login() {
 
           <p className="divider-text" role="separator"><span>ou</span></p>
 
-          <button className="btn-github btn--full" type="button">
-            <GithubIcon />
-            Continue com o GitHub
+          <button
+            className="btn-social btn--full"
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={googleLoading}
+          >
+            <GoogleIcon />
+            {googleLoading ? "Redirecionando..." : "Continuar com Google"}
           </button>
 
           <br /> 
           
           {/* galera, esse botão aqui serve só pra acessar o Dashboard enquanto ainda não tiver conexão com o banco, a fim de testes */}
-          <Link to="/dashboard" className="btn-github btn--full" type="button"> Entrar como visitante </Link>
+          <Link to="/dashboard" className="btn-social btn--full"> Entrar como visitante </Link>
 
           <Link to="/plans" className="link-accent" style={{ display: 'inline-block', marginTop: '12px' }}>
             Ver planos

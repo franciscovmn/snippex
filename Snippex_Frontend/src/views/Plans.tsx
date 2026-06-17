@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, CreditCard, ShieldCheck, Sparkles } from 'lucide-react';
+import axios from 'axios';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
-import { SnippexLogo } from '../components/SnippexLogo';
 import { planCatalog, getCheckoutUrl } from '../lib/subscriptionPlans.js';
+import type { PlanId } from '../lib/subscriptionPlans';
+import { userService } from '../services/userService';
 import '../css/plans.css';
 
 type BillingCycle = 'monthly' | 'yearly';
@@ -23,35 +25,69 @@ const billingCycleCopy: Record<BillingCycle, { label: string; note: string }> = 
 
 export default function Plans() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
+  const navigate = useNavigate();
+  const storedUser = localStorage.getItem('user');
+  let user = null;
 
-  const handleCheckout = (planId: 'pro' | 'team') => {
-    const url = getCheckoutUrl(planId, billingCycle);
-    if (!url) return;
-    window.location.assign(url);
+  if (storedUser) {
+    try {
+      user = JSON.parse(storedUser);
+    } catch {
+      user = null;
+    }
+  }
+  const currentPlanId = (
+    user?.subscription?.status === 'active' ? user?.subscription?.plan_id : 'free'
+  ) as PlanId;
+  const isLogged = Boolean(user);
+
+  const handleCheckout = async (planId: 'pro' | 'team') => {
+    const fallbackUrl = getCheckoutUrl(planId, billingCycle);
+
+    try {
+      const response = await userService.createCheckoutIntent(planId, billingCycle);
+      const url = response.checkoutUrl ?? fallbackUrl;
+      if (!url) return;
+      window.location.assign(url);
+    } catch (error) {
+      console.error(error);
+      if (axios.isAxiosError(error) && error.response?.status === 404 && fallbackUrl) {
+        window.location.assign(fallbackUrl);
+        return;
+      }
+      alert('Não foi possível preparar o checkout. Tente novamente.');
+    }
+  };
+
+  const handlePlanAction = async (planId: PlanId) => {
+    if (!isLogged) {
+      navigate(`/register?plan=${planId}&cycle=${billingCycle}`);
+      return;
+    }
+
+    if (planId === currentPlanId) return;
+
+    if (planId === 'free') {
+      navigate('/dashboard');
+      return;
+    }
+
+    await handleCheckout(planId);
   };
 
   return (
     <main className="plans-page">
-      <header className="plans-topbar">
-        <Link to="/login" className="plans-brand">
-          <SnippexLogo />
-        </Link>
-
-        <div className="plans-topbar-actions">
-          <Link to="/login" className="plans-topbar-link">Entrar</Link>
-        </div>
-      </header>
-
       <section className="plans-hero">
         <div className="plans-hero-copy">
           <Badge className="plans-eyebrow">
             <Sparkles size={12} />
             Planos
           </Badge>
-          <h1>Escolha o plano que acompanha o seu ritmo.</h1>
+          <h1>{isLogged ? 'Ajuste o plano do seu workspace.' : 'Escolha como quer começar.'}</h1>
           <p>
-            Comece no Freemium e faça upgrade para Pro ou Team quando quiser.
-            Mensal e anual usam os mesmos recursos, com preço e ciclo diferentes.
+            {isLogged
+              ? 'Seu plano atual fica visível aqui. Freemium continua disponível; Pro e Team seguem para o checkout Yampi.'
+              : 'Crie a conta pelo Freemium ou selecione Pro/Team antes do cadastro. O pagamento vem depois da conta criada.'}
           </p>
         </div>
 
@@ -78,6 +114,8 @@ export default function Plans() {
 
       <section className="plans-grid">
         {planCatalog.map((plan) => {
+          const isCurrentPlan = isLogged && currentPlanId === plan.id;
+
           if (plan.id === 'free') {
             return (
               <Card key={plan.id} className="plan-card plan-card--free">
@@ -86,7 +124,7 @@ export default function Plans() {
                     <p className="plan-card__eyebrow">{plan.eyebrow}</p>
                     <h2>{plan.name}</h2>
                   </div>
-                  <Badge>Grátis</Badge>
+                  <Badge>{isCurrentPlan ? 'Plano atual' : 'Grátis'}</Badge>
                 </div>
                 <p className="plan-card__description">{plan.description}</p>
                 <ul className="plan-card__list">
@@ -101,9 +139,10 @@ export default function Plans() {
                   variant="primary"
                   size="md"
                   leftIcon={<ArrowRight size={16} />}
-                  onClick={() => window.location.assign(plan.ctaHref ?? '/register')}
+                  onClick={() => handlePlanAction(plan.id)}
+                  disabled={isCurrentPlan}
                 >
-                  {plan.ctaLabel}
+                  {isCurrentPlan ? 'Você está no Freemium' : isLogged ? 'Usar Freemium' : plan.ctaLabel}
                 </Button>
               </Card>
             );
@@ -119,7 +158,7 @@ export default function Plans() {
                   <h2>{plan.name}</h2>
                 </div>
                 <Badge color={plan.id === 'pro' ? '#3b82f6' : '#a855f7'}>
-                  {billingCycleCopy[billingCycle].label}
+                  {isCurrentPlan ? 'Plano atual' : billingCycleCopy[billingCycle].label}
                 </Badge>
               </div>
               <p className="plan-card__description">{plan.description}</p>
@@ -136,13 +175,19 @@ export default function Plans() {
                   variant="primary"
                   size="md"
                   leftIcon={<CreditCard size={16} />}
-                  onClick={() => handleCheckout(plan.id as 'pro' | 'team')}
-                  disabled={!checkoutUrl}
+                  onClick={() => handlePlanAction(plan.id as PlanId)}
+                  disabled={isCurrentPlan || !checkoutUrl}
                 >
-                  {checkoutUrl ? `Assinar ${plan.name}` : 'Checkout indisponível'}
+                  {isCurrentPlan
+                    ? `Você está no ${plan.name}`
+                    : isLogged
+                      ? checkoutUrl ? `Assinar ${plan.name}` : 'Checkout indisponível'
+                      : `Escolher ${plan.name}`}
                 </Button>
                 <span className="plan-card__footer-note">
-                  Você pode cancelar a renovação sem perder o período já pago.
+                  {isLogged
+                    ? 'Você pode cancelar a renovação sem perder o período já pago.'
+                    : 'A conta é criada antes do checkout para vincular o pagamento ao seu e-mail.'}
                 </span>
               </div>
             </Card>

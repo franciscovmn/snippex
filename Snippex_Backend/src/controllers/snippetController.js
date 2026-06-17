@@ -1,4 +1,11 @@
 const repo = require('../repositories/snippetRepository')
+const subscriptionRepository = require('../repositories/subscriptionRepository')
+const {
+  getEffectivePlanId,
+  getPlanLimits,
+  shouldAllowSnippetCreation,
+  shouldTriggerAiExplanation,
+} = require('../services/planLimits')
 
 // ─────────────────────────────────────────────
 // POST /snippets
@@ -19,13 +26,33 @@ async function create(req, res) {
     const VALID = ['PUBLIC', 'TEAM', 'PRIVATE']
     const resolvedVisibility = VALID.includes(visibility) ? visibility : 'PUBLIC'
 
+    const subscription = await subscriptionRepository.getSubscriptionByUserId(userId)
+    const limits = getPlanLimits(getEffectivePlanId(subscription))
+    const usage = await repo.getUsageByUser(userId)
+
+    if (!shouldAllowSnippetCreation({ usage, limits })) {
+      const planLabel = limits.planId === 'free' ? 'Freemium' : limits.planId === 'pro' ? 'Pro' : 'Team'
+
+      return res.status(403).json({
+        error: `Seu plano ${planLabel} atingiu o limite de ${limits.totalSnippets} snippets.`,
+        code: 'SNIPPET_LIMIT_REACHED',
+        limits,
+        usage,
+      })
+    }
+
+    const canTriggerAiExplanation = shouldTriggerAiExplanation({ usage, limits })
 
     const snippet = await repo.createSnippet({
       userId, title, type, language, code, visibility: resolvedVisibility, teamId, tags, suggestions,
     })
 
-    // Dispara o enriquecimento por IA (n8n) em background — sem await, não bloqueia a resposta
-    triggerN8nEnrichment(snippet)
+    if (canTriggerAiExplanation) {
+      // Dispara o enriquecimento por IA (n8n) em background — sem await, não bloqueia a resposta
+      triggerN8nEnrichment(snippet)
+    } else {
+      snippet.ai_enrichment_skipped_reason = 'ai_quota_reached'
+    }
 
     return res.status(201).json(snippet)
   } catch (err) {

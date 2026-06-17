@@ -17,7 +17,9 @@ async function recordWebhookEvent({ event, merchantAlias, resourceType, resource
 
 async function upsertWebhookCustomer(payload) {
   const { merchantAlias, resourceId, customerEmail, customerName, event } = payload
-  const user = customerEmail ? await userRepository.findUserByEmail(customerEmail) : null
+  const user = payload.snippexUserId
+    ? await userRepository.findUserById(payload.snippexUserId)
+    : customerEmail ? await userRepository.findUserByEmail(customerEmail) : null
 
   await pool.query(
     `
@@ -50,7 +52,9 @@ async function upsertWebhookCustomer(payload) {
 
 async function upsertWebhookOrder(payload) {
   const { merchantAlias, resourceId, customerId, customerEmail, customerName, orderNumber, orderStatus } = payload
-  const user = customerEmail ? await userRepository.findUserByEmail(customerEmail) : null
+  const user = payload.snippexUserId
+    ? await userRepository.findUserById(payload.snippexUserId)
+    : customerEmail ? await userRepository.findUserByEmail(customerEmail) : null
 
   await pool.query(
     `
